@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
 import asyncpg
@@ -14,6 +15,7 @@ from fastapi import Depends, Header, HTTPException, status
 from database.connection import get_conn
 from services.jwt_util import decode_token
 from services.profile_util import compute_profile_completed
+from services.token_revocation import assert_token_not_revoked
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +36,21 @@ def _pg_row_to_user_dict(row: asyncpg.Record) -> dict:
     return d
 
 
+def _assert_not_suspended(row: asyncpg.Record, now: datetime | None = None) -> None:
+    """Reject users with an active suspension."""
+    sus_until = row.get("suspension_until")
+    if sus_until is None:
+        return
+    check_at = now or datetime.now(timezone.utc)
+    sus_dt = sus_until if sus_until.tzinfo else sus_until.replace(tzinfo=timezone.utc)
+    if sus_dt > check_at:
+        reason = row.get("suspension_reason") or "Account suspended"
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Account suspended: {reason}",
+        )
+
+
 async def get_current_user(
     authorization: Optional[str] = Header(default=None),
     conn: asyncpg.Connection = Depends(get_conn),
@@ -44,6 +61,10 @@ async def get_current_user(
 
     token = authorization.split(" ", 1)[1].strip()
     payload = decode_token(token)
+
+    jti = payload.get("jti", "")
+    if jti:
+        await assert_token_not_revoked(conn, jti)
 
     user_id_str = payload.get("sub", "")
     if not user_id_str:
@@ -60,10 +81,11 @@ async def get_current_user(
     if not row["is_active"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated")
 
+    _assert_not_suspended(row)
+
     return _pg_row_to_user_dict(row)
 
 
-# Alias kept so Phase 4 routes that already import get_current_user_pg still compile.
 get_current_user_pg = get_current_user
 
 

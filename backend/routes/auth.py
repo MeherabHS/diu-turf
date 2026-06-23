@@ -26,7 +26,7 @@ import time
 from datetime import datetime, timezone
 
 import asyncpg
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 
 from database.connection import get_conn
 from database.exceptions import UniqueViolationError
@@ -52,6 +52,7 @@ from services.password_util import hash_password, verify_password
 from services.profile_util import compute_profile_completed
 from services.rate_limit import enforce_auth_rate_limit
 from services.registration_util import normalize_email, normalize_student_id, validate_registration_identity
+from services.token_revocation import revoke_token
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 log = logging.getLogger(__name__)
@@ -668,16 +669,24 @@ async def me(
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(
     user: dict = Depends(get_current_user_pg),
+    authorization: str | None = Header(default=None),
     conn: asyncpg.Connection = Depends(get_conn),
 ) -> dict:
-    """Revoke the current JWT by storing its jti in token_revocations.
+    """Revoke the current JWT by storing its jti in token_revocations."""
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1].strip()
+        payload = decode_token(token)
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+        if jti and exp:
+            expires_at = datetime.fromtimestamp(int(exp), tz=timezone.utc)
+            await revoke_token(
+                conn,
+                jti=jti,
+                user_id=user["user_id"],
+                expires_at=expires_at,
+            )
 
-    Client MUST discard the token from secure storage after this call.
-    Server-side revocation check on every request is a Phase 6 enhancement.
-    """
-    # Re-read the bearer header to extract jti (not exposed by get_current_user_pg).
-    # This is acceptable since get_current_user_pg already validated the token.
-    # We log the audit regardless of jti extraction success.
     await _write_audit(
         conn,
         None,

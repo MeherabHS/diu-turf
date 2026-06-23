@@ -22,7 +22,10 @@ import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
+import { initSentry, Sentry } from "@/src/config/sentry";
 import { AuthBootstrap } from "@/src/store/AuthBootstrap";
+
+initSentry();
 
 // Maximum time we will hold the splash for font loading before giving up.
 const STARTUP_FONT_TIMEOUT_MS = 3000;
@@ -31,7 +34,9 @@ SplashScreen.preventAutoHideAsync().catch(() => {
   /* preventAutoHide can reject if called twice — harmless */
 });
 
-export default function RootLayout() {
+export default Sentry.wrap(RootLayout);
+
+function RootLayout() {
   const [loaded, error] = useIconFonts();
   const [fontTimedOut, setFontTimedOut] = useState(false);
 

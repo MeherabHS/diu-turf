@@ -15,6 +15,7 @@ import asyncpg
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 ROOT_DIR = Path(__file__).parent
@@ -22,6 +23,8 @@ load_dotenv(ROOT_DIR / ".env")
 
 from database.connection import close_pool, create_pool  # noqa: E402
 from database.db_config import DbBackend  # noqa: E402
+from services.cors_config import parse_allowed_origins  # noqa: E402
+from services.startup_validation import validate_production_config  # noqa: E402
 from database.health import ping_database  # noqa: E402
 from database.seed_pg import seed  # noqa: E402
 from services.slot_cache import clear_slot_cache, load_slot_cache  # noqa: E402
@@ -33,6 +36,9 @@ from routes.users import router as users_router  # noqa: E402
 from routes.notifications import router as notifications_router  # noqa: E402
 from routes.access_requests import router as access_requests_router  # noqa: E402
 from routes.ws import router as ws_router  # noqa: E402
+from services.sentry_config import init_sentry  # noqa: E402
+
+init_sentry()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,6 +53,7 @@ STARTUP_DB_TIMEOUT = float(os.getenv("STARTUP_DB_TIMEOUT", "15"))
 async def lifespan(app: FastAPI):
     logger.info("[STARTUP] creating database pool")
     pool, db_config = await create_pool()
+    validate_production_config(db_config)
     app.state.db_pool = pool
     app.state.db_config = db_config
     app.state.db_ok = False
@@ -109,6 +116,22 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="DIU Hostel Turf Booking", lifespan=lifespan)
 
+_cors_origins, _cors_credentials = parse_allowed_origins()
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        if os.getenv("ENVIRONMENT", "production").lower() == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 
 @app.middleware("http")
 async def perf_logging_middleware(request: Request, call_next):
@@ -125,8 +148,8 @@ async def perf_logging_middleware(request: Request, call_next):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=["*"],
+    allow_credentials=_cors_credentials,
+    allow_origins=_cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

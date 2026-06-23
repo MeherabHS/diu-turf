@@ -2,7 +2,7 @@
   "expo": {
     "name": "DIU Turf",
     "slug": "frontend",
-    "owner": "mehz",
+    "owner": "mrcube12",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -14,13 +14,13 @@
       "bundleIdentifier": "com.diu.turf"
     },
     "android": {
-      "package": "com.diu.turf",
-      "versionCode": 1,
+      "label": "DIU Turf",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#000"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.diu.turf"
     },
     "web": {
       "bundler": "metro",
@@ -35,25 +35,28 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#FFFFFF"
+          "backgroundColor": "#000"
         }
       ],
       "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#0F172A",
+          "defaultChannel": "booking-updates"
+        }
+      ],
       [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.757976966702-mcd4lkrpkn50s28j4h0qpt2rr7ath1ms"
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "b265ecda-c6cc-49c7-8e90-9e8c3e8573d8"
-      }
     }
   }
 }

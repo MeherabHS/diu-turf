@@ -97,6 +97,17 @@ android {
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
+    splits {
+        abi {
+            // Off by default so debug/emulator builds stay a single APK. Enable for release:
+            //   -Pandroid.enableAbiSplits=true -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+            def enableAbiSplits = (findProperty('android.enableAbiSplits') ?: 'false').toBoolean()
+            enable enableAbiSplits
+            reset()
+            include "arm64-v8a", "armeabi-v7a"
+            universalApk false
+        }
+    }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
