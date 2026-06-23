@@ -9,7 +9,7 @@ import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from database.connection import get_conn
-from services.auth_dep import get_current_user, require_admin, require_booking_access
+from services.auth_dep import get_current_user
 from services.serialize import serialize_dt
 
 router = APIRouter(tags=["activity"])

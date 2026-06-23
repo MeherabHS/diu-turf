@@ -73,4 +73,14 @@ async def require_admin(user: dict = Depends(get_current_user)) -> dict:
     return user
 
 
+async def require_booking_access(user: dict = Depends(get_current_user)) -> dict:
+    """Allow booker, admin, and super_admin; reject viewer/student with 403."""
+    if user.get("role") not in ("booker", "admin", "super_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Booking access required",
+        )
+    return user
+
+
 require_admin_pg = require_admin
