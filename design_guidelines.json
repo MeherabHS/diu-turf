@@ -1,0 +1,107 @@
+{
+  "theme": "Light",
+  "archetype": "4 (Swiss & High-Contrast)",
+  "colors": {
+    "background": "#FFFFFF",
+    "surface": "#F8FAFC",
+    "surface_secondary": "#F1F5F9",
+    "primary": "#50B748",
+    "primary_dark": "#3B8C34",
+    "text_primary": "#0F172A",
+    "text_secondary": "#64748B",
+    "border": "#E2E8F0",
+    "status_available": "#50B748",
+    "status_available_bg": "#DCFCE7",
+    "status_booked": "#94A3B8",
+    "status_booked_bg": "#F1F5F9",
+    "status_maintenance": "#F59E0B",
+    "status_maintenance_bg": "#FEF3C7",
+    "status_selected": "#0F172A",
+    "status_selected_bg": "#E2E8F0"
+  },
+  "typography": {
+    "font_family_heading": "Outfit, System",
+    "font_family_body": "Satoshi, System",
+    "h1": { "fontSize": 48, "fontWeight": "800", "letterSpacing": -1.5, "lineHeight": 56 },
+    "h2": { "fontSize": 32, "fontWeight": "700", "letterSpacing": -1, "lineHeight": 40 },
+    "h3": { "fontSize": 24, "fontWeight": "600", "letterSpacing": -0.5, "lineHeight": 32 },
+    "body": { "fontSize": 16, "fontWeight": "400", "letterSpacing": 0, "lineHeight": 24 },
+    "label": { "fontSize": 12, "fontWeight": "700", "letterSpacing": 1.2, "textTransform": "uppercase" }
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "2xl": 48,
+    "3xl": 64
+  },
+  "borders": {
+    "radius_sm": 8,
+    "radius_md": 12,
+    "radius_lg": 16,
+    "radius_pill": 9999,
+    "width_default": 1,
+    "width_thick": 2
+  },
+  "shadows": {
+    "card": {
+      "shadowColor": "#0F172A",
+      "shadowOffset": { "width": 0, "height": 8 },
+      "shadowOpacity": 0.04,
+      "shadowRadius": 24,
+      "elevation": 2
+    },
+    "button": {
+      "shadowColor": "#50B748",
+      "shadowOffset": { "width": 0, "height": 4 },
+      "shadowOpacity": 0.2,
+      "shadowRadius": 12,
+      "elevation": 4
+    }
+  },
+  "components": {
+    "button": "Generous padding (paddingVertical: 16, paddingHorizontal: 32). Fully rounded corners (borderRadius: 9999) for primary actions. Primary button uses #50B748 background with #FFFFFF text. Must include data-testid and testID.",
+    "card": "Flat surface (#F8FAFC) with 1px border (#E2E8F0) and borderRadius: 16. Minimal shadow. Padding inside MUST be at least 24px.",
+    "chip": "Small pill shape. paddingVertical: 6, paddingHorizontal: 12. Text size 12px uppercase bold. Colors mapped to status (e.g., Available gets #DCFCE7 bg and #50B748 text).",
+    "input": "Large tap targets (minHeight: 56). Solid background (#F1F5F9) instead of borders, or stark 1px solid border. Active state border turns #50B748.",
+    "header": "Sticky/fixed header using React Navigation. Background pure white. Title aligned left with massive typography, avoid generic centering."
+  },
+  "screens": {
+    "Splash": "Background #50B748. Massive 'DIU Turf' typography in #FFFFFF. Include DIU logo.",
+    "Login": "White background. Massive H1 'DIU Turf'. Minimal Google OAuth button. Warning text: 'Exclusive access for @diu.edu.bd students' in text_secondary.",
+    "ProfileCompletion": "Simple form. Collect Student ID. Massive 'Complete Profile' heading.",
+    "HomeDashboard": "Displays today's 3 slots. Use 'Bento' style cards for morning, afternoon, evening. Each card shows Time in H2, plus a status Chip.",
+    "SlotDetail": "Modal or bottom sheet. If Booked, display booker's Name + Student ID in huge text. If Available, show huge 'BOOK SLOT' CTA pinned to bottom.",
+    "MyBookings": "List view of past/upcoming bookings. Clean separator lines.",
+    "AdminDashboard": "Dense 'Control Room' grid layout. List all bookings. Toggle buttons to mark slot as 'Maintenance'."
+  },
+  "image_urls": {
+    "splash_background": {
+      "url": "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwzfHxzb2NjZXIlMjB0dXJmfGVufDB8fHx8MTc4MTQxMTE5OHww&ixlib=rb-4.1.0&q=85",
+      "description": "Aerial view of football field, to be used subtly on splash or login with heavy overlay"
+    },
+    "turf_placeholder": {
+      "url": "https://images.unsplash.com/photo-1517747614396-d21a78b850e8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwxfHxzb2NjZXIlMjB0dXJmfGVufDB8fHx8MTc4MTQxMTE5OHww&ixlib=rb-4.1.0&q=85",
+      "description": "Bird's-eye view of green soccer field with lights, suitable for home screen hero image or headers"
+    },
+    "students_placeholder": {
+      "url": "https://images.unsplash.com/photo-1700914299961-d8f91559d85d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHwxfHx1bml2ZXJzaXR5JTIwc3R1ZGVudHMlMjBwbGF5aW5nJTIwc3BvcnRzfGVufDB8fHx8MTc4MTQxMTE5OHww&ixlib=rb-4.1.0&q=85",
+      "description": "Students playing sports on a track, suitable for empty states or profile headers"
+    }
+  },
+  "accessibility_and_testing": {
+    "test_id_rules": "All interactive elements (buttons, inputs, list items) MUST have both `testID` (for React Native) and `data-testid` attributes in kebab-case, reflecting their role (e.g., `testID='login-google-button'`).",
+    "contrast": "Ensure minimum 4.5:1 ratio for standard text and 3:1 for large text against background."
+  },
+  "instructions_to_main_agent": [
+    "Use React Native StyleSheet for styling. Do NOT use NativeWind.",
+    "Implement navigation using React Navigation (bottom tabs for Home, Bookings, Profile).",
+    "Use SafeAreaView to prevent notch overlaps.",
+    "Implement the UI with strict adherence to the spacing and typography scales defined here.",
+    "All components must be .js files, not .tsx files.",
+    "Ensure the Google OAuth login strictly mentions or validates the domain '@diu.edu.bd'.",
+    "Apply status-based color coding heavily on the Home Dashboard slots (Available, Booked, Maintenance)."
+  ]
+}

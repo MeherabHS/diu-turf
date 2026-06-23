@@ -1,0 +1,42 @@
+{
+  "summary": "Phase 0+1 backend regression: 26/26 pytest cases pass against the public preview URL. Health/root banner, auth contract (401 vs 403 semantics), domain enforcement code path, seeded admin, today's 3 slots, MongoDB indexes (users.email unique, user_sessions TTL, bookings partial-unique on user+date and date+slot_key, bookings TTL), and authenticated profile-update flow (regex validation + persistence) all verified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/auth/logout", "issue": "Unused `authorization: str | None = None` query-style param on the logout signature (routes/auth.py:122). Harmless but misleading — deletion is by user_id, not by token. Cosmetic only."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_phase1.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Optional cleanup: remove the unused `authorization` parameter from `logout` in /app/backend/routes/auth.py to avoid future confusion; deletion is already keyed on user_id from the dependency."
+  ],
+  "critical_code_review_comments": [
+    "get_current_user correctly uses Header(default=None) and returns 401 (not 403) on missing/invalid bearer — matches integration playbook.",
+    "Domain enforcement: services/domain.is_diu_email + routes/auth.py raises 403 with ALLOWED_DOMAIN message for non-@diu.edu.bd emails. Branch verified by source inspection (cannot drive real Google OAuth end-to-end).",
+    "All Mongo reads project {_id: 0}; ObjectId never leaks into responses.",
+    "Indexes (users.email unique, user_sessions.expires_at TTL=0, bookings partial-unique on user_id+date and date+slot_key with status=active, bookings.expires_at TTL=0) all created and asserted.",
+    "Seed is idempotent (admin upsert preserves role; slots use $setOnInsert keyed on date+slot_key).",
+    "Profile update enforces STUDENT_ID_RE ^[A-Za-z0-9-]{3,32}$ at the route layer in addition to Pydantic length checks; invalid chars → 400, too-short → 422 (Pydantic).",
+    "POST /api/auth/session correctly maps Emergent non-200 to 401, missing email/token to 502, and non-DIU email to 403."
+  ],
+  "updated_files": [
+    "/app/backend/tests/conftest.py (new)",
+    "/app/backend/tests/test_phase1.py (new)"
+  ],
+  "success_rate": {"backend": "100% (26/26)", "frontend": "N/A (backend-only request)"},
+  "seed_data_creation": "Tests insert a temporary user_sessions row with session_token='TEST_session_token_pytest' bound to the seeded admin user_id and tear it down via fixture. The admin's student_id is temporarily set to TEST-ADMIN-0001 in one persistence test and restored to ADMIN-0001 immediately after.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend Phase 0+1 is solid. Reuse /app/backend/tests/test_phase1.py as the regression suite for future phases. The admin_session/admin_headers fixtures in conftest.py give you a Bearer token bound to the seeded admin without going through Google OAuth — use them for any authenticated endpoint testing. Real Google OAuth cannot be automated; rely on these synthetic sessions plus code-path inspection. Run with: EXPO_PUBLIC_BACKEND_URL=https://hostel-turf-base.preview.emergentagent.com pytest /app/backend/tests/ -v",
+  "rca_of_issue": "N/A — no failures observed."
+}

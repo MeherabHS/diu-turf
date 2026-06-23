@@ -1,0 +1,59 @@
+{
+  "summary": "Phase 1 JWT backend regression: 34/35 pytest cases pass against the public preview URL. Rewrote test suite (test_phase1.py → test_phase1_jwt.py) to target /api/auth/google + stateless JWT (HS256 from .env::JWT_SECRET). Coverage: health/banner, domain enforcement (exact 403 message), google-login endpoint (400/401/422 paths), JWT issue/decode contract (sub/email/role/iat/exp + 7-day exp + alg=HS256), /api/auth/me happy path + expired + wrong-secret + unknown-user, profile update on /api/users/profile and /api/users/me alias (regex + persistence), logout + stateless-token-still-valid behaviour, and MongoDB indexes (users.email & user_id unique, bookings partial-unique pairs, bookings TTL). One legitimate failure: the seeded admin row in MongoDB is missing the `department` field (and `batch`/`last_login`).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "services/seed.py::seed_admin",
+        "issue": "Seed is not idempotent w.r.t. schema evolution. If the admin row was inserted under an older schema, the early-return path only patches `role` and never backfills new fields. Current /test_database admin doc has user_id, email, name, role, student_id, profile_completed, created_at, updated_at — but is MISSING department='Administration', batch='—', picture, last_login. The User pydantic model coerces them to None on read, so /api/auth/me serialises department:null instead of 'Administration'. Spec requires department=Administration on the seeded admin."
+      },
+      {
+        "endpoint": "POST /api/auth/logout",
+        "issue": "Cosmetic only — endpoint exists for API symmetry but cannot revoke a stateless JWT. Documented; same token still authenticates /api/auth/me afterward. Pinned by test_token_still_valid_after_logout_stateless_jwt. If real revocation is needed, introduce a Mongo denylist keyed by jti+exp and check it in auth_dep.get_current_user."
+      },
+      {
+        "endpoint": "services/db.init_db",
+        "issue": "user_sessions collection indexes (session_token unique + expires_at TTL) are still created even though Phase 1 dropped DB-backed sessions in favour of stateless JWTs. Safe to remove."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_phase1_jwt.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Fix seed_admin to backfill missing fields (department='Administration', batch='—', picture=None, last_login=None) on existing rows — currently spec-mandated department is null on the seeded admin. Quick patch: replace the early `return` with an `$set` of any missing-spec fields, or use `$setOnInsert` for immutable ones and `$set` for spec fields like department.",
+    "(Optional) Drop user_sessions indexes from init_db now that JWT replaces DB sessions.",
+    "(Optional) Remove the unused `authorization` query-style param from logout signature (cosmetic).",
+    "Decide whether logout should be true session-kill (requires JWT denylist by jti) or stay symbolic (current behaviour). Current test pins 'symbolic'; flip the test if you implement a denylist."
+  ],
+  "critical_code_review_comments": [
+    "JWT util correctly enforces HS256, signs sub/email/role/iat/exp claims, exp=JWT_EXPIRES_DAYS (7) days; exp − iat == 604800 seconds, verified.",
+    "decode_token maps ExpiredSignatureError → 401 'Session expired' and InvalidTokenError → 401 'Invalid session' — semantics align with playbook (401 not 403 for auth failures).",
+    "get_current_user requires `Bearer ` prefix and 401s on missing scheme/token — correct vs OWASP guidance.",
+    "Domain enforcement message verified exact: 'Access restricted to Daffodil International University students.'",
+    "All Mongo reads project {_id: 0}; ObjectId never leaks into responses (verified routes/auth.py and routes/users.py).",
+    "Profile update enforces regex at route layer (400) AND Pydantic length (422); both paths covered.",
+    "/api/users/me alias works identically to /api/users/profile (verified via parametrised persistence test).",
+    "Seed of today's 3 slots is idempotent via $setOnInsert on (date, slot_key).",
+    "JWT_SECRET in .env is 64 chars — adequate entropy for HS256."
+  ],
+  "updated_files": [
+    "/app/backend/tests/conftest.py (rewritten — DB-session fixtures replaced with JWT-minting factory)",
+    "/app/backend/tests/test_phase1_jwt.py (new — 35 cases, replaces obsolete test_phase1.py)",
+    "/app/backend/tests/test_phase1.py (deleted — targeted removed /api/auth/session)"
+  ],
+  "success_rate": {"backend": "97% (34/35)", "frontend": "N/A (backend-only request)"},
+  "seed_data_creation": "Tests mint short-lived JWTs in-process using JWT_SECRET from backend/.env via the mint_jwt fixture (no DB writes for auth). The valid-payload persistence tests temporarily mutate the seeded admin's profile fields and restore them in a finally block, so the suite is idempotent. No new collections created.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Reuse /app/backend/tests/test_phase1_jwt.py for Phase 2 regression. The mint_jwt fixture (conftest.py) is the canonical way to obtain authenticated headers without going through Google OAuth — call it with a user_id/email/role and optional exp_delta/secret to drive any auth-gated endpoint. To re-run: `cd /app/backend && python -m pytest tests/ -v --junitxml=/app/test_reports/pytest/pytest_results.xml`. The single remaining failure (TestSeededAdmin.test_admin_seeded_with_expected_fields) will go green automatically once main agent patches services/seed.py::seed_admin to backfill department/batch on the existing row, OR after dropping the admin doc and letting startup re-seed it.",
+  "rca_of_issue": "RCA — Missing department on seeded admin: services/seed.py::seed_admin executes `existing = await db.users.find_one(...)`; if existing, it only `$set`s role when role != 'admin' and returns. Any new schema fields added to the insert path (department, batch, picture, last_login) are silently absent on rows created before those fields were added. The bug is invisible at the API level because User pydantic model has Optional[...] = None defaults, so /api/auth/me happily returns department:null. Reproduction: `mongosh test_database --eval 'db.users.findOne({email:\"admin@diu.edu.bd\"})'` shows no `department` key. Mitigation: change seed_admin's existing branch to `db.users.update_one({...}, {'$set': spec_fields})` using only fields that are spec-mandated (role, student_id, department, batch, profile_completed), preserving created_at/email/user_id."
+}

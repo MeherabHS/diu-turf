@@ -1,0 +1,50 @@
+{
+  "summary": "Phase 2 backend regression complete — 26/26 Phase 2 cases PASS (and Phase 1: 35/35 also still PASS; 61 total). Coverage: health, auth gating (401), DateOverview shape & past-date completion, create-booking happy path with full analytics (day_of_week, hour, booking_lead_time, department, batch), past-slot rejection (400), invalid date (400), unknown slot_id (422), incomplete-profile (400), same-slot double-booking (409), same-user same-day second slot (409), parallel race (one 201 / one 409), GET /me sort-desc + derived completed status for past 'booked' rows, DELETE owner/admin/non-owner/404/already-cancelled/completed-slot paths, slot re-bookability post-cancel, analytics_events appended on every create AND cancel, MongoDB partial unique indexes verified (uniq_active_slot_per_date and uniq_active_booking_per_user_per_date with partialFilterExpression={status:'booked'}, unique:true), and WebSocket flow (rejects missing/invalid token, valid token receives hello + booking.created + booking.cancelled frames in real time).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET/POST /api/ws/bookings (auth rejection mechanism)",
+        "issue": "Spec says missing/invalid token → WS close 1008. Actual implementation calls websocket.close(code=1008) BEFORE websocket.accept(), so Starlette rejects the WebSocket handshake at HTTP layer with 403 (the client never sees a 1008 close frame). Functionally equivalent (connection is denied for auth) and arguably stronger (no resources allocated), but if you want clients to read the 1008 code, call websocket.accept() first, then await websocket.close(code=1008). Test currently accepts either HTTP 403 OR WS close 1008."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase2_bookings.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/phase2_results.xml",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional) If you want WS auth-fail to surface as code 1008 to clients instead of HTTP 403, change routes/ws.py to accept() then close(code=1008). Either approach is acceptable security-wise.",
+    "Carry over the still-open Phase 1 minor: services/seed.py::seed_admin does not backfill department='Administration' / batch / picture / last_login on existing admin rows; admin row in test_database is missing department key (User.department serialises as null). Unchanged from iteration_2."
+  ],
+  "critical_code_review_comments": [
+    "FIXED during this run: routes/ws.py used Depends(get_db) where get_db is request-scoped — FastAPI cannot inject Request into a WebSocket route, so every WS connection 500'd with TypeError: get_db() missing 1 required positional argument: 'request'. Replaced with direct websocket.app.state.db access. WS broadcasts now work end-to-end (verified by test_ws_valid_token_hello_and_broadcast).",
+    "Booking concurrency relies on Mongo's two partial unique indexes (status:'booked'), not app-level locks. Verified atomic — race test fires two parallel POSTs and gets exactly [201, 409].",
+    "Cancelled bookings keep their row but with status='cancelled'; partialFilterExpression on the unique indexes correctly excludes them, so the slot becomes rebookable (verified).",
+    "All Mongo reads project {_id:0}; no ObjectId leaks.",
+    "Asia/Dhaka tz applied consistently (turf_schedule.now_turf, slot_datetimes, is_future_slot, is_completed). Past-slot rejection works as expected.",
+    "Analytics fields populated on insert: day_of_week (0–6), hour (slot start), booking_lead_time (signed int minutes), department, batch. analytics_events appended best-effort on both create and cancel.",
+    "WS auth verified BEFORE accept(); user existence in DB also checked → can't broadcast to deleted users.",
+    "DuplicateKeyError discriminated by index name to return correct 409 message (Slot already booked vs You already have an active booking for this date).",
+    "GET /me derives completed status on read for past 'booked' rows — no cron needed (verified).",
+    "Profile-completed gate (services/auth_dep + _validate_profile in bookings) requires both profile_completed=true AND student_id; both checked."
+  ],
+  "updated_files": [
+    "/app/backend/routes/ws.py — removed Depends(get_db); read db from websocket.app.state.db (fixes 500 on every WS connection)",
+    "/app/backend/tests/test_phase2_bookings.py — NEW Phase 2 test suite (26 cases)"
+  ],
+  "success_rate": {"backend": "100% (26/26 Phase 2; 61/61 total incl. Phase 1)", "frontend": "N/A (backend-only request)"},
+  "seed_data_creation": "Tests use a user_factory fixture that inserts TEST_-prefixed users directly into Mongo with profile_completed=true and mints JWTs via the existing mint_jwt fixture. Module-scoped autouse fixture clears bookings for [-2, +30) days from today before AND after the run. user_factory deletes all created TEST_ users and their bookings on module teardown. No production data touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Reuse /app/backend/tests/test_phase2_bookings.py for Phase 2 regression. The user_factory fixture (module-scoped) is the canonical way to mint a fresh authenticated student in one line: `u = user_factory()` → returns dict with user_id, email, token, headers, doc. Pass profile_completed=False to test the profile gate; pass role='admin' to mint an admin (or use the existing admin_headers fixture from conftest.py for the seeded admin@diu.edu.bd). For WS testing, websockets v16 needs explicit `import websockets.exceptions as ws_exc` (not auto-loaded). Pre-accept close codes surface as InvalidStatus HTTP 403, NOT a WS close frame — the suite accepts either form. Re-run: `cd /app/backend && python -m pytest tests/ -v --junitxml=/app/test_reports/pytest/pytest_results.xml`.",
+  "rca_of_issue": "RCA — WebSocket /api/ws/bookings returned HTTP 500 on every connection. Root cause: routes/ws.py declared `db: AsyncIOMotorDatabase = Depends(get_db)` and services/db.py::get_db is signed as `def get_db(request: Request)`. FastAPI's dependency resolver for a WebSocket route does not inject `Request` (a WebSocket scope is not an HTTP request), so on each connection it called `get_db()` with no args → TypeError: missing 1 required positional argument: 'request'. The handshake aborted with 500 before authentication could run. Fix applied: dropped the Depends and read `db = websocket.app.state.db` directly (the app state is already populated by the lifespan handler). Verified via test_ws_valid_token_hello_and_broadcast — listener receives {type:'hello'}, then {type:'booking.created', ...}, then {type:'booking.cancelled', ...} when another client POSTs/DELETEs."
+}

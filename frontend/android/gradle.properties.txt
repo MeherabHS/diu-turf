@@ -1,0 +1,7 @@
+sdk.dir=C:\\Users\\CUBE\\AppData\\Local\\Android\\Sdk
+
+newArchEnabled=true
+hermesEnabled=true
+android.useAndroidX=true
+android.enableJetifier=true
+org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m
