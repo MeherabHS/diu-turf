@@ -86,3 +86,44 @@ android-sdk/
 credentials.json
 *.key
 .credentials
+# --- DIU Turf backend secrets ---
+backend/.env
+backend/.env.*
+backend/*.env
+
+# --- Local SQLite databases ---
+*.db
+*.db-shm
+*.db-wal
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+
+# --- Python virtual environments ---
+backend/.venv/
+backend/venv/
+backend/env/
+
+# --- Python cache ---
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.pytest_cache/
+
+# --- Expo / React Native ---
+frontend/.expo/
+frontend/dist/
+frontend/web-build/
+frontend/android/app/build/
+frontend/ios/build/
+
+# --- Build artifacts ---
+*.apk
+*.aab
+
+# --- EAS / Expo sensitive files ---
+eas.json.bak
+expo-env.d.ts
+
+# --- Local test/output files ---
+test_result.md
+_test_out.txt

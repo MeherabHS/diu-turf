@@ -288,7 +288,7 @@ async def register(
                         room_number, hostel_name, phone,
                         role, is_active, auth_provider, last_login, created_at, updated_at)
                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
-                           'student', TRUE, 'password', $10, $10, $10)
+                           'viewer', TRUE, 'password', $10, $10, $10)
                    RETURNING id""",
                 full_name,
                 email,

@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/src/components/Button";
-import { ADMIN_CONTACT_EMAIL, ALLOWED_EMAIL_DOMAIN, APP_NAME } from "@/src/constants";
+import { ADMIN_CONTACT_EMAIL, APP_NAME } from "@/src/constants";
 import { useAuthStore } from "@/src/store/useAuthStore";
 import { colors, radii, spacing, typography } from "@/src/theme";
 
@@ -100,8 +100,11 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             value={email}
-            onChangeText={setEmail}
-            placeholder={`252-35-166${ALLOWED_EMAIL_DOMAIN}`}
+            onChangeText={(text) => {
+              setEmail(text);
+              setError(null);
+            }}
+            placeholder="261-35-113@diu.edu.bd or user@ds.diu.edu.bd"
             placeholderTextColor={colors.text_tertiary}
             autoCapitalize="none"
             autoCorrect={false}
@@ -114,7 +117,10 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              setError(null);
+            }}
             placeholder="Your password"
             placeholderTextColor={colors.text_tertiary}
             secureTextEntry
@@ -169,7 +175,7 @@ export default function LoginScreen() {
           <View style={styles.notice} testID="login-domain-notice">
             <Ionicons name="shield-checkmark-outline" size={16} color={colors.text_secondary} />
             <Text style={styles.noticeText}>
-              Only <Text style={styles.bold}>{ALLOWED_EMAIL_DOMAIN}</Text> accounts are allowed.
+              Only DIU institutional emails are allowed (@diu.edu.bd and department addresses like @ds.diu.edu.bd).
             </Text>
           </View>
 

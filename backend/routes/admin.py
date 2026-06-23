@@ -17,6 +17,7 @@ from database.connection import get_conn
 from database.exceptions import UniqueViolationError
 from services.activity import add_notification, fan_out_notification, log_activity
 from services.auth_dep import get_current_user, require_admin
+from services.permissions import require_booking_access
 from services.serialize import parse_dt, serialize_dt
 from services.models import BookingCreate, WaitlistEntry, WaitlistJoin
 from services.uuid_util import uuid_same
@@ -93,7 +94,7 @@ async def admin_kpis(
 
     active_students = await conn.fetchval(
         """SELECT COUNT(*) FROM users
-           WHERE role = 'student' AND is_active = TRUE
+           WHERE role NOT IN ('admin', 'super_admin') AND is_active = TRUE
              AND (suspension_until IS NULL OR suspension_until <= $1)""",
         now,
     )
@@ -525,7 +526,7 @@ async def _activate_user(user_id: str, admin: dict, conn: asyncpg.Connection) ->
 class AdminStudentProfileUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=2, max_length=80)
     email: Optional[str] = Field(default=None, min_length=10)
-    student_id: Optional[str] = Field(default=None, min_length=10, max_length=10)
+    student_id: Optional[str] = Field(default=None, min_length=10, max_length=12)
     department: Optional[str] = Field(default=None, min_length=1, max_length=100)
     batch: Optional[str] = Field(default=None, min_length=1, max_length=50)
     room_number: Optional[str] = Field(default=None, max_length=20)
@@ -795,7 +796,7 @@ def _waitlist_row_to_entry(row: dict) -> WaitlistEntry:
 async def join_waitlist(
     payload: WaitlistJoin,
     request: Request,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_booking_access),
     conn: asyncpg.Connection = Depends(get_conn),
 ):
     if not user.get("profile_completed"):
@@ -885,7 +886,7 @@ async def my_waitlists(
 @router.delete("/waitlists/{waitlist_id}")
 async def leave_waitlist(
     waitlist_id: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_booking_access),
     conn: asyncpg.Connection = Depends(get_conn),
 ):
     try:

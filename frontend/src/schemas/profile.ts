@@ -1,6 +1,8 @@
 /** Zod schemas — single source of truth for form validation. */
 import { z } from "zod";
 
+import { isValidStudentId } from "@/src/utils/diuValidation";
+
 export const profileSchema = z.object({
   name: z
     .string()
@@ -10,9 +12,9 @@ export const profileSchema = z.object({
   student_id: z
     .string()
     .trim()
-    .min(3, "Student ID is required")
-    .max(32, "Student ID must be 32 characters or less")
-    .regex(/^[A-Za-z0-9-]+$/, "Letters, numbers and hyphens only"),
+    .refine(isValidStudentId, {
+      message: "Student ID must match xxx-xx-xxx or xxx-xx-xxxx (e.g. 252-35-166).",
+    }),
   department: z
     .string()
     .trim()

@@ -12,5 +12,5 @@ _ADMIN_SET = frozenset(e.strip().lower() for e in ADMIN_EMAILS)
 
 
 def role_for_email(email: str) -> str:
-    """Return 'admin' for configured emails, otherwise 'student'."""
-    return "admin" if email.strip().lower() in _ADMIN_SET else "student"
+    """Return 'admin' for configured emails, otherwise 'viewer' (view-only student)."""
+    return "admin" if email.strip().lower() in _ADMIN_SET else "viewer"

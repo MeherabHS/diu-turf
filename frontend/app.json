@@ -2,7 +2,7 @@
   "expo": {
     "name": "DIU Turf",
     "slug": "frontend",
-    "owner": "mrcube12",
+    "owner": "mehz",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -52,7 +52,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "58cba19d-d39e-4a0a-b3a1-077393915f73"
+        "projectId": "b265ecda-c6cc-49c7-8e90-9e8c3e8573d8"
       }
     }
   }

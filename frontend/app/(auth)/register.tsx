@@ -16,7 +16,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/src/components/Button";
-import { ALLOWED_EMAIL_DOMAIN } from "@/src/constants";
 import { registerSchema, type RegisterFormValues } from "@/src/schemas/register";
 import { useAuthStore } from "@/src/store/useAuthStore";
 import { colors, radii, spacing, typography } from "@/src/theme";
@@ -56,10 +55,12 @@ export default function RegisterScreen() {
   const {
     control,
     handleSubmit,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    mode: "onChange",
+    mode: "onSubmit",
+    reValidateMode: "onSubmit",
     defaultValues: {
       full_name: "",
       email: "",
@@ -142,9 +143,14 @@ export default function RegisterScreen() {
                 <TextInput
                   style={styles.input}
                   value={value}
-                  onChangeText={onChange}
+                  onChangeText={(text) => {
+                    onChange(text);
+                    clearErrors(["email", "student_id"]);
+                    setSubmitError(null);
+                    setError(null);
+                  }}
                   onBlur={onBlur}
-                  placeholder={`252-35-166${ALLOWED_EMAIL_DOMAIN}`}
+                  placeholder="261-35-113@diu.edu.bd or user@ds.diu.edu.bd"
                   placeholderTextColor={colors.text_tertiary}
                   autoCapitalize="none"
                   keyboardType="email-address"
@@ -162,9 +168,14 @@ export default function RegisterScreen() {
                 <TextInput
                   style={styles.input}
                   value={value}
-                  onChangeText={onChange}
+                  onChangeText={(text) => {
+                    onChange(text);
+                    clearErrors(["email", "student_id"]);
+                    setSubmitError(null);
+                    setError(null);
+                  }}
                   onBlur={onBlur}
-                  placeholder="252-35-166"
+                  placeholder="261-35-113 or 123-35-1137"
                   placeholderTextColor={colors.text_tertiary}
                   autoCapitalize="none"
                   testID="register-student-id-input"

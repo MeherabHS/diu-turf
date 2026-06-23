@@ -1,5 +1,7 @@
 /** Profile tab — view and edit account details. */
+import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -13,13 +15,14 @@ import { Toast, type ToastMessage } from "@/src/components/Toast";
 import { profileSchema, type ProfileFormValues } from "@/src/schemas/profile";
 import { useAuthStore } from "@/src/store/useAuthStore";
 import { colors, radii, spacing, typography } from "@/src/theme";
-import { isAdminRole } from "@/src/utils/roles";
+import { isAdminRole, roleDisplayLabel, canBookSlots } from "@/src/utils/roles";
 import { displayName } from "@/src/utils/userDisplay";
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const updateProfile = useAuthStore((s) => s.updateProfile);
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
@@ -84,8 +87,19 @@ export default function ProfileScreen() {
             <Text style={styles.name} testID="profile-name">{displayName(user)}</Text>
             <Text style={styles.email} testID="profile-email">{user?.email}</Text>
             <View style={[styles.badge, isAdminRole(user?.role) ? styles.badgeAdmin : styles.badgeStudent]}>
-              <Text style={styles.badgeText}>{user?.role?.toUpperCase()}</Text>
+              <Text style={styles.badgeText}>{roleDisplayLabel(user?.role)}</Text>
             </View>
+            {!canBookSlots(user?.role) && !isAdminRole(user?.role) ? (
+              <View style={{ marginTop: spacing.md }}>
+                <Button
+                  label="Request Booking Access"
+                  variant="secondary"
+                  onPress={() => router.push("/request-access")}
+                  leftIcon={<Ionicons name="star-outline" size={18} color={colors.primary} />}
+                  testID="profile-request-access"
+                />
+              </View>
+            ) : null}
             <Text style={styles.sectionLabel}>Edit profile</Text>
             {user?.email ? (
               <ProfileFormFields control={control} errors={errors} email={user.email} />

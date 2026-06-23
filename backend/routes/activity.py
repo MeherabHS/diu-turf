@@ -9,7 +9,7 @@ import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from database.connection import get_conn
-from services.auth_dep import get_current_user
+from services.auth_dep import get_current_user, require_admin, require_booking_access
 from services.serialize import serialize_dt
 
 router = APIRouter(tags=["activity"])
@@ -44,20 +44,38 @@ def _normalize_action(event_type: str) -> str:
 @router.get("/api/activity")
 async def recent_activity(
     limit: int = Query(default=20, ge=1, le=100),
-    user: dict = Depends(get_current_user),  # noqa: ARG001 — auth gate
+    user: dict = Depends(get_current_user),
     conn: asyncpg.Connection = Depends(get_conn),
 ):
-    rows = await conn.fetch(
-        """SELECT al.id, al.actor_user_id, al.event_type, al.message,
-                  al.metadata, al.created_at,
-                  u.name  AS student_name,
-                  u.student_id
-           FROM activity_logs al
-           LEFT JOIN users u ON u.id = al.actor_user_id
-           ORDER BY al.created_at DESC
-           LIMIT $1""",
-        limit,
-    )
+    is_admin = user.get("role") in ("admin", "super_admin")
+    if is_admin:
+        rows = await conn.fetch(
+            """SELECT al.id, al.actor_user_id, al.event_type, al.message,
+                      al.metadata, al.created_at,
+                      u.name  AS student_name,
+                      u.student_id
+               FROM activity_logs al
+               LEFT JOIN users u ON u.id = al.actor_user_id
+               ORDER BY al.created_at DESC
+               LIMIT $1""",
+            limit,
+        )
+    else:
+        uid = uuid.UUID(user["user_id"])
+        rows = await conn.fetch(
+            """SELECT al.id, al.actor_user_id, al.event_type, al.message,
+                      al.metadata, al.created_at,
+                      u.name  AS student_name,
+                      u.student_id
+               FROM activity_logs al
+               LEFT JOIN users u ON u.id = al.actor_user_id
+               WHERE al.actor_user_id = $1
+                 AND al.event_type IN ('booking.created', 'booking.cancelled', 'booking.completed')
+               ORDER BY al.created_at DESC
+               LIMIT $2""",
+            uid,
+            limit,
+        )
     items = []
     for r in rows:
         meta = _meta_dict(r["metadata"])

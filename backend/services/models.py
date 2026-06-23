@@ -29,7 +29,7 @@ def _coerce_dt(v: Any) -> Any:
 FlexDatetime = Annotated[datetime, BeforeValidator(_coerce_dt)]
 OptFlexDatetime = Annotated[Optional[datetime], BeforeValidator(_coerce_dt)]
 
-Role = Literal["student", "admin", "super_admin"]
+Role = Literal["viewer", "booker", "student", "admin", "super_admin"]
 SlotId = str  # slot_key from slot_templates (A/B/C seed + admin-defined slots)
 SlotStatus = Literal["available", "booked", "completed", "maintenance"]
 BookingStatus = Literal["booked", "completed", "cancelled"]
@@ -53,7 +53,7 @@ class RegisterRequest(BaseModel):
     email: str = Field(..., min_length=10)
     password: str = Field(..., min_length=8, max_length=128)
     full_name: str = Field(..., min_length=2, max_length=80)
-    student_id: str = Field(..., min_length=10, max_length=10)
+    student_id: str = Field(..., min_length=10, max_length=12)
     department: str = Field(..., min_length=1, max_length=100)
     batch: str = Field(..., min_length=1, max_length=50)
     room_number: Optional[str] = Field(default=None, max_length=20)
@@ -78,7 +78,7 @@ class User(BaseModel):
     name: str
     picture: Optional[str] = None           # avatar_url alias
     google_sub: Optional[str] = None        # Google sub claim (Phase 4)
-    role: str = "student"
+    role: str = "viewer"
     student_id: Optional[str] = None
     department: Optional[str] = None
     batch: Optional[str] = None

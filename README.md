@@ -448,9 +448,10 @@ npx expo run:android
 
 | Target | `EXPO_PUBLIC_API_BASE_URL` |
 |--------|----------------------------|
-| Android emulator | `http://10.0.2.2:8001` |
-| iOS simulator | `http://localhost:8001` |
-| Physical device | `http://<your-LAN-IP>:8001` |
+| APK / physical devices / testers (default) | `https://diu-turf.onrender.com` |
+| Android emulator + local backend | `http://10.0.2.2:8001` |
+| iOS simulator + local backend | `http://localhost:8001` |
+| Physical device + local backend | `http://<your-LAN-IP>:8001` |
 
 ### Google Cloud Console
 

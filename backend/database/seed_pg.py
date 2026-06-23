@@ -237,7 +237,7 @@ async def seed(conn: Any) -> None:
         conn,
         email=DEV_TEST_STUDENT_EMAIL,
         name=DEV_TEST_STUDENT_NAME,
-        role="student",
+        role="viewer",
         student_id=DEV_TEST_STUDENT_ID,
         password_hash=None,
         department=DEV_TEST_STUDENT_DEPARTMENT,
@@ -261,6 +261,27 @@ async def seed(conn: Any) -> None:
                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
                    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
                    UNIQUE (user_id, expo_push_token)
+               )"""
+        )
+        await _commit_if_needed(conn)
+    except Exception:
+        pass
+
+    try:
+        await conn.execute(
+            """CREATE TABLE IF NOT EXISTS booking_access_requests (
+                   id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+                   user_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+                   name TEXT NOT NULL,
+                   email TEXT NOT NULL,
+                   student_id TEXT,
+                   reason TEXT,
+                   status TEXT NOT NULL DEFAULT 'pending'
+                       CHECK (status IN ('pending', 'approved', 'rejected')),
+                   reviewed_by TEXT REFERENCES users (id) ON DELETE SET NULL,
+                   reviewed_at TEXT,
+                   created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
                )"""
         )
         await _commit_if_needed(conn)

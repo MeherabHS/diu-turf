@@ -8,7 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "http://10.0.2.2:8001",
+        "EXPO_PUBLIC_API_BASE_URL": "https://diu-turf.onrender.com",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB": "757976966702-mcd4lkrpkn50s28j4h0qpt2rr7ath1ms.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID": "757976966702-pmrc8ojhp7uorej107f8otvl0s4hpjrd.apps.googleusercontent.com",
         "EXPO_PUBLIC_DEV_AUTH_ENABLED": "false"
@@ -20,7 +20,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "http://10.0.2.2:8001",
+        "EXPO_PUBLIC_API_BASE_URL": "https://diu-turf.onrender.com",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB": "757976966702-mcd4lkrpkn50s28j4h0qpt2rr7ath1ms.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID": "757976966702-pmrc8ojhp7uorej107f8otvl0s4hpjrd.apps.googleusercontent.com",
         "EXPO_PUBLIC_DEV_AUTH_ENABLED": "false"

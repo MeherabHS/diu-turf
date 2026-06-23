@@ -26,6 +26,7 @@ import { authService } from "@/src/services/authService";
 import type { ProfilePayload, RegisterPayload, User } from "@/src/types";
 import { navigateAfterAuth } from "@/src/utils/authRouting";
 import { getFriendlyErrorMessage } from "@/src/utils/errors";
+import { clearUserCache } from "@/src/utils/userCache";
 import { storage } from "@/src/utils/storage";
 
 interface AuthState {
@@ -206,12 +207,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // ── Logout ─────────────────────────────────────────────────────────────────
   logout: async () => {
+    const userId = get().user?.user_id;
     try {
       await authService.logout();
     } catch {
       // Best-effort server call; client state is the truth.
     }
     await storage.secureRemove(JWT_STORAGE_KEY);
+    await clearUserCache(userId);
     set({ token: null, user: null, isAuthenticated: false, isLoading: false, error: null });
   },
 

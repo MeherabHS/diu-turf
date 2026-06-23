@@ -18,6 +18,7 @@ from database.booking_tx import (
 )
 from database.connection import get_conn
 from services.auth_dep import get_current_user
+from services.permissions import require_booking_access
 from services.serialize import parse_dt
 from services.models import (
     Booking,
@@ -187,7 +188,7 @@ async def _promote_waitlist_after_cancel(
 async def create_booking_route(
     payload: BookingCreate,
     request: Request,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_booking_access),
     conn: asyncpg.Connection = Depends(get_conn),
 ) -> Booking:
     if not user.get("profile_completed"):
@@ -451,7 +452,7 @@ async def my_bookings(
 async def cancel_booking_route(
     booking_id: str,
     request: Request = None,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_booking_access),
     conn: asyncpg.Connection = Depends(get_conn),
 ) -> dict:
     try:

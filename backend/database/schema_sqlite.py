@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS users (
     avatar_url        TEXT,
     google_sub        TEXT,
     auth_provider     TEXT NOT NULL DEFAULT 'password',
-    role              TEXT NOT NULL DEFAULT 'student'
-                      CHECK (role IN ('student', 'admin', 'super_admin')),
+    role              TEXT NOT NULL DEFAULT 'viewer'
+                      CHECK (role IN ('viewer', 'booker', 'student', 'admin', 'super_admin')),
     is_active         INTEGER NOT NULL DEFAULT 1,
     suspension_until  TEXT,
     suspension_reason TEXT,
@@ -204,6 +204,31 @@ CREATE TABLE IF NOT EXISTS user_push_tokens (
 CREATE INDEX IF NOT EXISTS idx_user_push_tokens_user_active
     ON user_push_tokens (user_id)
     WHERE is_active = 1;
+
+CREATE TABLE IF NOT EXISTS booking_access_requests (
+    id          TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+    user_id     TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    name        TEXT NOT NULL,
+    email       TEXT NOT NULL,
+    student_id  TEXT,
+    reason      TEXT,
+    status      TEXT NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending', 'approved', 'rejected')),
+    reviewed_by TEXT REFERENCES users (id) ON DELETE SET NULL,
+    reviewed_at TEXT,
+    created_at  TEXT NOT NULL DEFAULT __SQLITE_NOW__,
+    updated_at  TEXT NOT NULL DEFAULT __SQLITE_NOW__
+);
+
+CREATE INDEX IF NOT EXISTS idx_booking_access_requests_user
+    ON booking_access_requests (user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_booking_access_requests_status
+    ON booking_access_requests (status, created_at DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_booking_access_requests_one_pending
+    ON booking_access_requests (user_id)
+    WHERE status = 'pending';
 """
 
 SCHEMA_SQL = _SCHEMA_TEMPLATE.replace("__SQLITE_NOW__", _SQLITE_NOW)

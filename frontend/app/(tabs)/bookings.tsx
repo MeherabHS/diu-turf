@@ -27,10 +27,12 @@ import { bookingService } from "@/src/services/bookingService";
 import { cancelBookingReminders, presentInstantCancellation } from "@/src/services/notifications";
 import { waitlistService } from "@/src/services/waitlistService";
 import { useBookingsRefreshStore } from "@/src/store/useBookingsRefreshStore";
+import { useAuthStore } from "@/src/store/useAuthStore";
 import { colors, radii, spacing, typography } from "@/src/theme";
 import type { Booking, WaitlistEntry } from "@/src/types/booking";
 import { prettyDate, prettyRange } from "@/src/utils/datetime";
 import { getFriendlyErrorMessage } from "@/src/utils/errors";
+import { canBookSlots } from "@/src/utils/roles";
 
 type TabKey = "upcoming" | "waitlist" | "completed" | "cancelled";
 const TABS: { key: TabKey; label: string }[] = [
@@ -52,6 +54,8 @@ function isCompletedBooking(b: Booking): boolean {
 export default function BookingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const canBook = canBookSlots(user?.role);
   const bumpBookingsRefresh = useBookingsRefreshStore((s) => s.bump);
   useTicker(1000);
 
@@ -242,7 +246,7 @@ export default function BookingsScreen() {
           ) : (
             <BookingCard
               booking={row.booking}
-              showCancel={tab === "upcoming"}
+              showCancel={tab === "upcoming" && canBook}
               cancelDisabled={isCancelling(row.booking.booking_id)}
               onCancel={() => setPendingCancel(row.booking)}
             />

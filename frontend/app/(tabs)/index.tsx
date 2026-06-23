@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BookingAccessBanner } from "@/src/components/BookingAccessBanner";
 import { Button } from "@/src/components/Button";
 import { Card } from "@/src/components/Card";
 import { EmptyState } from "@/src/components/EmptyState";
@@ -36,6 +37,7 @@ import {
 import { getFriendlyErrorMessage } from "@/src/utils/errors";
 import { getActivityDisplayText, isMeaningfulActivity } from "@/src/utils/activityText";
 import { displayName, profileSubtext } from "@/src/utils/userDisplay";
+import { canBookSlots } from "@/src/utils/roles";
 
 function isFutureBooking(b: Booking): boolean {
   return Date.now() < dhakaUtcMs(b.booking_date, b.start_time);
@@ -85,6 +87,7 @@ export default function HomeScreen() {
 
   const headerName = displayName(user);
   const headerSub = profileSubtext(user);
+  const canBook = canBookSlots(user?.role);
   const greeting = timeOfDayGreeting();
   const visibleActivity = useMemo(
     () => activity.filter(isMeaningfulActivity),
@@ -160,9 +163,12 @@ export default function HomeScreen() {
         <BookingStatusCard
           booking={upcomingBooking}
           loading={loading && myBookings.length === 0}
+          canBook={canBook}
           onViewBooking={() => router.push("/(tabs)/bookings")}
-          onBookSlot={() => router.push("/(tabs)/book")}
+          onBookSlot={() => router.push(canBook ? "/(tabs)/book" : "/request-access")}
         />
+
+        {!canBook ? <BookingAccessBanner /> : null}
 
         <Text style={styles.sectionTitle}>Today&apos;s Turf Schedule</Text>
         {loading && !overview ? (
@@ -176,7 +182,7 @@ export default function HomeScreen() {
         <StatsCard stats={stats} loading={loading && myBookings.length === 0} />
 
         <View style={styles.activityHeader}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <Text style={styles.sectionTitle}>Your booking updates</Text>
           {visibleActivity.length > 0 ? (
             <TouchableOpacity onPress={() => router.push("/activity")} testID="home-activity-see-all">
               <Text style={styles.seeAll}>See all</Text>
@@ -217,9 +223,10 @@ export default function HomeScreen() {
 const BookingStatusCard: React.FC<{
   booking: Booking | null;
   loading: boolean;
+  canBook: boolean;
   onViewBooking: () => void;
   onBookSlot: () => void;
-}> = ({ booking, loading, onViewBooking, onBookSlot }) => {
+}> = ({ booking, loading, canBook, onViewBooking, onBookSlot }) => {
   const startMs = booking ? dhakaUtcMs(booking.booking_date, booking.start_time) : 0;
   const countdown = booking && startMs > Date.now()
     ? `Starts in ${formatCountdown(startMs - Date.now())}`
@@ -248,10 +255,21 @@ const BookingStatusCard: React.FC<{
         <>
           <Text style={styles.statusHeadline}>No Active Booking</Text>
           <Text style={styles.emptyBookingSub}>
-            Reserve a slot and secure your play time.
+            {canBook
+              ? "Reserve a slot and secure your play time."
+              : "Browse turf availability. Request booking access to reserve a slot."}
           </Text>
           <View style={{ height: spacing.md }} />
-          <Button label="Book a Slot" onPress={onBookSlot} testID="home-book-slot-primary" />
+          {canBook ? (
+            <Button label="Book a Slot" onPress={onBookSlot} testID="home-book-slot-primary" />
+          ) : (
+            <Button
+              label="Request Booking Access"
+              onPress={onBookSlot}
+              variant="secondary"
+              testID="home-request-access-primary"
+            />
+          )}
         </>
       )}
     </Card>

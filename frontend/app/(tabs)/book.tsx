@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BookingAccessBanner } from "@/src/components/BookingAccessBanner";
 import { Button } from "@/src/components/Button";
 import { BookingCalendar } from "@/src/components/BookingCalendar";
 import { ErrorState } from "@/src/components/ErrorState";
@@ -30,10 +31,12 @@ import {
 } from "@/src/services/notifications";
 import { waitlistService } from "@/src/services/waitlistService";
 import { useBookingsRefreshStore } from "@/src/store/useBookingsRefreshStore";
+import { useAuthStore } from "@/src/store/useAuthStore";
 import { colors, spacing, typography } from "@/src/theme";
 import type { CalendarDay, DateOverview, SlotId, SlotView } from "@/src/types/booking";
 import { formatBookerBookedText } from "@/src/utils/userDisplay";
 import { getFriendlyErrorMessage } from "@/src/utils/errors";
+import { canBookSlots } from "@/src/utils/roles";
 import {
   parseYearMonth,
   prettyDateLong,
@@ -63,6 +66,8 @@ export default function BookScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const bumpRefresh = useBookingsRefreshStore((s) => s.bump);
+  const user = useAuthStore((s) => s.user);
+  const canBook = canBookSlots(user?.role);
   const today = todayDhakaDateString();
   const initialYm = parseYearMonth(today);
   const [date, setDate] = useState(today);
@@ -255,14 +260,24 @@ export default function BookScreen() {
   }, [joiningSlotId, date, bumpRefresh]);
 
   const handleBookPress = useCallback((slotId: SlotId) => {
+    if (!canBook) {
+      setToast({ kind: "error", text: "You need booking access to reserve or cancel slots." });
+      router.push("/request-access");
+      return;
+    }
     const slot = overviewRef.current?.slots.find((s) => s.slot_id === slotId);
     if (slot) setPendingSlot(slot);
-  }, []);
+  }, [canBook, router]);
 
   const handleJoinWaitlistPress = useCallback((slotId: SlotId) => {
+    if (!canBook) {
+      setToast({ kind: "error", text: "You need booking access to reserve or cancel slots." });
+      router.push("/request-access");
+      return;
+    }
     const slot = overviewRef.current?.slots.find((s) => s.slot_id === slotId);
     if (slot) void joinWaitlist(slot);
-  }, [joinWaitlist]);
+  }, [canBook, joinWaitlist, router]);
 
   const bottomPad = insets.bottom + TAB_BAR_CLEARANCE;
 
@@ -323,6 +338,7 @@ export default function BookScreen() {
         <Text style={styles.dateHeading} testID="book-date-heading">
           {prettyDateLong(date)}
         </Text>
+        {!canBook ? <BookingAccessBanner compact /> : null}
         {!loading && overview ? (
           <Text style={styles.availabilitySummary} testID="book-availability-summary">
             {availabilityLabel(availableCount, date, today)}
@@ -360,6 +376,7 @@ export default function BookScreen() {
               key={s.slot_id}
               slot={s}
               joining={joiningSlotId === s.slot_id}
+              canBook={canBook}
               onBook={handleBookPress}
               onJoinWaitlist={handleJoinWaitlistPress}
             />
@@ -406,11 +423,12 @@ export default function BookScreen() {
 interface SlotCardProps {
   slot: SlotView;
   joining?: boolean;
+  canBook: boolean;
   onBook: (slotId: SlotId) => void;
   onJoinWaitlist: (slotId: SlotId) => void;
 }
 
-const SlotCard = memo(function SlotCard({ slot, joining, onBook, onJoinWaitlist }: SlotCardProps) {
+const SlotCard = memo(function SlotCard({ slot, joining, canBook, onBook, onJoinWaitlist }: SlotCardProps) {
   const visual = slotVisual(slot);
   const isBookedByOther = slot.status === "booked" && !slot.is_mine && !slot.is_waitlisted;
   const canJoinWaitlist = isBookedByOther && slot.status !== "completed";
@@ -424,7 +442,7 @@ const SlotCard = memo(function SlotCard({ slot, joining, onBook, onJoinWaitlist 
           ? "Waitlisted"
           : "Unavailable";
 
-  const actionDisabled = visual !== "available";
+  const actionDisabled = visual !== "available" || !canBook;
 
   return (
     <View
@@ -474,7 +492,7 @@ const SlotCard = memo(function SlotCard({ slot, joining, onBook, onJoinWaitlist 
         />
       </View>
 
-      {canJoinWaitlist ? (
+      {canJoinWaitlist && canBook ? (
         <Button
           label="Join waitlist"
           loadingLabel="Joining..."

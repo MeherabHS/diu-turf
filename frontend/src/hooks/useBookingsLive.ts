@@ -13,7 +13,7 @@ import { uuidHex } from "@/src/utils/uuid";
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ??
   process.env.EXPO_PUBLIC_BACKEND_URL ??
-  "";
+  "https://diu-turf.onrender.com";
 
 function toWsUrl(base: string, token: string): string {
   const wsBase = base.replace(/^http/i, "ws").replace(/\/+$/, "");

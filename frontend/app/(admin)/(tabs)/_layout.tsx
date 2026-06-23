@@ -34,6 +34,13 @@ export default function AdminTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="access-requests"
+        options={{
+          title: "Access",
+          tabBarIcon: ({ color, size }) => <Ionicons name="star-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="students"
         options={{
           title: "Students",

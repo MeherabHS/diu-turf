@@ -1,9 +1,12 @@
 /** Zod schema for registration form validation. */
 import { z } from "zod";
 
-import { ALLOWED_EMAIL_DOMAIN } from "@/src/constants";
-
-const STUDENT_ID_REGEX = /^\d{3}-\d{2}-\d{3}$/;
+import {
+  emailLocalPart,
+  isDiuEmail,
+  isValidStudentId,
+  requiresEmailStudentIdMatch,
+} from "@/src/utils/diuValidation";
 
 export const registerSchema = z
   .object({
@@ -17,13 +20,15 @@ export const registerSchema = z
       .trim()
       .min(1, "Email is required")
       .email("Enter a valid email")
-      .refine((v) => v.toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN), {
-        message: `Email must end with ${ALLOWED_EMAIL_DOMAIN}`,
+      .refine(isDiuEmail, {
+        message: "Use a DIU email (@diu.edu.bd or @*.diu.edu.bd).",
       }),
     student_id: z
       .string()
       .trim()
-      .regex(STUDENT_ID_REGEX, "Student ID must match xxx-xx-xxx (e.g. 252-35-166)"),
+      .refine(isValidStudentId, {
+        message: "Student ID must match xxx-xx-xxx or xxx-xx-xxxx (e.g. 252-35-166).",
+      }),
     department: z.string().trim().min(1, "Department is required").max(100),
     batch: z.string().trim().min(1, "Batch is required").max(50),
     room_number: z.string().trim().max(20).optional().or(z.literal("")),
@@ -35,14 +40,15 @@ export const registerSchema = z
   .superRefine((data, ctx) => {
     const email = data.email.trim().toLowerCase();
     const studentId = data.student_id.trim();
-    const localPart = email.split("@")[0] ?? "";
-    if (localPart !== studentId) {
+
+    if (requiresEmailStudentIdMatch(email) && emailLocalPart(email) !== studentId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Student ID must match the part before @diu.edu.bd.",
+        message: "Student ID must match the part before @ in your DIU email.",
         path: ["student_id"],
       });
     }
+
     if (data.password !== data.confirm_password) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

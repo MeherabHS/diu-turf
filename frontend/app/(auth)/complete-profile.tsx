@@ -34,7 +34,8 @@ export default function CompleteProfileScreen() {
     formState: { errors, isSubmitting, isValid },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    mode: "onChange",
+    mode: "onSubmit",
+    reValidateMode: "onSubmit",
     defaultValues: {
       name: user?.name ?? "",
       student_id: user?.student_id ?? "",

@@ -51,6 +51,9 @@ def test_diu_email_accepted():
     assert is_diu_email("abc221-15-1234@diu.edu.bd") is True
     assert is_diu_email("student@diu.edu.bd") is True
     assert is_diu_email("ADMIN@DIU.EDU.BD") is True  # case-insensitive
+    assert is_diu_email("tahrim35-1137@ds.diu.edu.bd") is True
+    assert is_diu_email("user@swe.diu.edu.bd") is True
+    assert is_diu_email("user@cse.diu.edu.bd") is True
 
 
 def test_non_diu_email_rejected():

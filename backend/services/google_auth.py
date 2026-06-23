@@ -129,5 +129,9 @@ async def verify_google_id_token(token: str) -> GoogleClaims:
 
 
 def is_diu_email(email: str) -> bool:
-    """Return True if the email belongs to the allowed DIU domain."""
-    return email.lower().strip().endswith(ALLOWED_DOMAIN)
+    """Return True if the email belongs to DIU (@diu.edu.bd or @*.diu.edu.bd)."""
+    email = email.strip().lower()
+    if "@" not in email:
+        return False
+    domain = email.split("@", 1)[1]
+    return domain == "diu.edu.bd" or domain.endswith(".diu.edu.bd")

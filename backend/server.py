@@ -30,7 +30,7 @@ from routes.admin import router as admin_router  # noqa: E402
 from routes.auth import router as auth_router  # noqa: E402
 from routes.bookings import router as bookings_router  # noqa: E402
 from routes.users import router as users_router  # noqa: E402
-from routes.notifications import router as notifications_router  # noqa: E402
+from routes.access_requests import router as access_requests_router  # noqa: E402
 from routes.ws import router as ws_router  # noqa: E402
 
 logging.basicConfig(
@@ -166,4 +166,5 @@ app.include_router(bookings_router)
 app.include_router(activity_router)
 app.include_router(admin_router)
 app.include_router(notifications_router)
+app.include_router(access_requests_router)
 app.include_router(ws_router)

@@ -12,4 +12,4 @@ def test_role_for_email_admin():
 
 
 def test_role_for_email_student():
-    assert role_for_email("student@diu.edu.bd") == "student"
+    assert role_for_email("student@diu.edu.bd") == "viewer"

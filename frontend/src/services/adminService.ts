@@ -158,4 +158,29 @@ export const adminService = {
 
   enableSlot: (slotId: string) =>
     api.patch<AdminSlotRow>(`/api/admin/slots/${slotId}/enable`),
+
+  listAccessRequests: (status?: "pending" | "approved" | "rejected") =>
+    api.get<AccessRequestRow[]>(
+      `/api/admin/access-requests${status ? `?status=${status}` : ""}`,
+    ),
+
+  approveAccessRequest: (requestId: string) =>
+    api.post<AccessRequestRow>(`/api/admin/access-requests/${requestId}/approve`),
+
+  rejectAccessRequest: (requestId: string) =>
+    api.post<AccessRequestRow>(`/api/admin/access-requests/${requestId}/reject`),
 };
+
+export interface AccessRequestRow {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  student_id: string | null;
+  reason: string | null;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}

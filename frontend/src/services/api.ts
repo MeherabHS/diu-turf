@@ -15,9 +15,9 @@ import { storage } from "@/src/utils/storage";
 
 // EXPO_PUBLIC_API_BASE_URL is canonical (Phase 4+); old name kept as fallback.
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ??
-  process.env.EXPO_PUBLIC_BACKEND_URL ??
-  "";
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  process.env.EXPO_PUBLIC_BACKEND_URL ||
+  "https://diu-turf.onrender.com";
 
 // Default per-request timeout. Startup calls override this with a shorter one.
 const DEFAULT_TIMEOUT_MS = 8000;

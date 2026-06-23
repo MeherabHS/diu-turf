@@ -27,7 +27,7 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB.as_posix()}"
 
 SEED_EMAIL = "252-35-166@diu.edu.bd"
 SEED_STUDENT_ID = "252-35-166"
-MISMATCH_MSG = "Student ID must match the part before @diu.edu.bd."
+MISMATCH_MSG = "Student ID must match the part before @ in your DIU email."
 
 
 @pytest.fixture(scope="module")
@@ -313,6 +313,25 @@ def test_registration_util_validation():
     assert validate_registration_identity("252-35-166@diu.edu.bd", "252-35-166") is None
     assert validate_registration_identity("252-35-999@diu.edu.bd", "252-35-166") == MISMATCH_MSG
     assert validate_registration_identity("shafin@diu.edu.bd", "252-35-166") == MISMATCH_MSG
+    assert validate_registration_identity("tahrim35-1137@ds.diu.edu.bd", "123-35-1137") is None
+    assert validate_registration_identity("261-35-113@diu.edu.bd", "261-35-113") is None
+    assert validate_registration_identity("tahrim35-1137@ds.diu.edu.bd", "261-35-113") is None
+
+
+def test_student_id_formats():
+    from services.registration_util import validate_student_id_format
+
+    assert validate_student_id_format("261-35-113") is None
+    assert validate_student_id_format("123-35-1137") is None
+    assert validate_student_id_format("12-35-113") is not None
+
+
+def test_is_diu_email_subdomains():
+    from services.google_auth import is_diu_email
+
+    assert is_diu_email("tahrim35-1137@ds.diu.edu.bd") is True
+    assert is_diu_email("261-35-113@diu.edu.bd") is True
+    assert is_diu_email("notdiu@gmail.com") is False
 
 
 def test_password_hash_never_stores_plain():

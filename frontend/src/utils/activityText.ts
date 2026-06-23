@@ -28,5 +28,8 @@ export function getActivityDisplayText(item: ActivityItem): string {
 }
 
 export function isMeaningfulActivity(item: ActivityItem): boolean {
+  const eventType = item.event_type ?? "";
+  if (eventType.startsWith("auth.")) return false;
+  if (eventType.startsWith("admin.")) return false;
   return getActivityDisplayText(item).length > 0;
 }

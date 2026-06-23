@@ -8,7 +8,7 @@
  *  - Added LoginPayload and RegisterPayload stubs for Phase 5+ email auth.
  */
 
-export type Role = "student" | "admin" | "super_admin";
+export type Role = "viewer" | "booker" | "student" | "admin" | "super_admin";
 export type SlotKey = string;
 export type SlotStatus = "available" | "booked" | "completed" | "maintenance";
 
