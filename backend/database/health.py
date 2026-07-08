@@ -1,4 +1,4 @@
-"""Fast database health probe — bounded time, never blocks the root endpoint."""
+﻿"""Fast database health probe â€” bounded time, never blocks the root endpoint."""
 from __future__ import annotations
 
 import asyncio
@@ -36,3 +36,4 @@ async def ping_database(
         ms = (time.perf_counter() - start) * 1000
         log.warning("[ROOT] db ping failed in %.1fms: %s", ms, exc)
         return False
+
