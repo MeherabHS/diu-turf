@@ -1,8 +1,8 @@
-/** Status chip — colour-coded by slot status. */
+/** Status chip â€” colour-coded by slot status. */
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { colors, radii, spacing, typography } from "@/src/theme";
+import { colors, radii, typography } from "@/src/theme";
 import type { SlotStatus } from "@/src/types";
 
 interface Props {

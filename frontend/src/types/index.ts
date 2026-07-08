@@ -31,6 +31,23 @@ export interface User {
   updated_at: string;
 }
 
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  full_name: string;
+  student_id: string;
+  department: string;
+  batch: string;
+  room_number?: string | null;
+  hostel_name?: string | null;
+  phone?: string | null;
+}
+
 /** Returned by POST /api/auth/google. */
 export interface AuthResponse {
   access_token: string;   // renamed from 'token' in Phase 4

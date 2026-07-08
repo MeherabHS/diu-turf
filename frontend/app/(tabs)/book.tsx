@@ -167,7 +167,7 @@ export default function BookScreen() {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      router.replace("/(tabs)/");
+      router.replace("/(tabs)");
     }
   }, [navigation, router]);
 

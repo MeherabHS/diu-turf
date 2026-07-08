@@ -19,13 +19,24 @@ _RUN_ID = uuid.uuid4().hex[:8]
 _TEST_DB = f"dev_seed_test_{_RUN_ID}.db"
 
 
+def _mock_request():
+    from unittest.mock import MagicMock
+
+    request = MagicMock()
+    request.client.host = f"test-dev-seed-{uuid.uuid4().hex}"
+    request.headers.get.return_value = None
+    return request
+
+
 @pytest.fixture(scope="module", autouse=True)
 def sqlite_dev_env():
     os.environ["DATABASE_URL"] = f"sqlite:///./{_TEST_DB}"
     os.environ["ENVIRONMENT"] = "development"
     os.environ["DEV_AUTH_ENABLED"] = "true"
     os.environ["JWT_SECRET"] = "test_" + "x" * 60
+    os.environ["ADMIN_DEFAULT_PASSWORD"] = "TestAdminPassword1!"
     yield
+    os.environ.pop("ADMIN_DEFAULT_PASSWORD", None)
     Path(_TEST_DB).unlink(missing_ok=True)
 
 
@@ -56,7 +67,7 @@ def test_seed_creates_dev_accounts():
             assert admin["role"] == "admin"
             assert admin["is_active"] is True
             assert student is not None
-            assert student["role"] == "student"
+            assert student["role"] == "viewer"
             assert student["student_id"] == DEV_TEST_STUDENT_ID
             assert student["name"] == DEV_TEST_STUDENT_NAME
             assert student["is_active"] is True
@@ -81,7 +92,7 @@ def test_seed_is_idempotent():
                     DEV_TEST_STUDENT_EMAIL,
                 )
             assert student["student_id"] == DEV_TEST_STUDENT_ID
-            assert student["role"] == "student"
+            assert student["role"] == "viewer"
             assert student["is_active"] is True
         finally:
             from database.connection import close_pool
@@ -99,10 +110,10 @@ def test_dev_login_test_student():
         pool = await _seed_pool()
         try:
             async with pool.acquire() as conn:
-                auth = await dev_login(DevLoginRequest(email=DEV_TEST_STUDENT_EMAIL), conn)
+                auth = await dev_login(DevLoginRequest(email=DEV_TEST_STUDENT_EMAIL), _mock_request(), conn)
             assert auth.access_token
             assert auth.user.email == DEV_TEST_STUDENT_EMAIL
-            assert auth.user.role == "student"
+            assert auth.user.role == "viewer"
             assert auth.user.profile_completed is True
             assert auth.user.student_id == DEV_TEST_STUDENT_ID
         finally:
@@ -121,7 +132,7 @@ def test_dev_login_admin():
         pool = await _seed_pool()
         try:
             async with pool.acquire() as conn:
-                auth = await dev_login(DevLoginRequest(email=DEV_ADMIN_EMAIL), conn)
+                auth = await dev_login(DevLoginRequest(email=DEV_ADMIN_EMAIL), _mock_request(), conn)
             assert auth.access_token
             assert auth.user.role == "admin"
         finally:

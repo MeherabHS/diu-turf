@@ -1,4 +1,4 @@
-"""Password auth acceptance tests — register + login with DIU email/student ID rules.
+"""Password auth acceptance tests Ã¢â‚¬â€ register + login with DIU email/student ID rules.
 
 Run:
     cd backend
@@ -14,13 +14,14 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 
-os.environ.setdefault("JWT_SECRET", "test-secret-password-auth")
+os.environ.setdefault("JWT_SECRET", "test-secret-password-auth-32chars-minimum")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 os.environ.setdefault("JWT_EXPIRES_DAYS", "7")
 os.environ.setdefault("ENVIRONMENT", "development")
 os.environ.setdefault("DEV_AUTH_ENABLED", "false")
 os.environ.setdefault("AUTH_RATE_LIMIT_MAX", "1000")
 os.environ.setdefault("AUTH_RATE_LIMIT_WINDOW", "60")
+os.environ.setdefault("ADMIN_DEFAULT_PASSWORD", "TestAdminPassword1!")
 
 _TEST_DB = Path(__file__).parent / f"test_password_auth_{uuid.uuid4().hex[:8]}.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB.as_posix()}"
@@ -69,8 +70,7 @@ def mock_request():
 
 
 def _unique_student_id() -> str:
-    n = uuid.uuid4().int % 1000
-    return f"252-35-{n:03d}"
+    return f"252-35-{uuid.uuid4().hex[:8]}"
 
 
 def _register_payload(**overrides):
@@ -199,7 +199,7 @@ async def test_register_duplicate_student_id(conn, mock_request):
     email = f"{sid}@diu.edu.bd"
     await register(RegisterRequest(**_register_payload(email=email, student_id=sid)), mock_request, conn)
 
-    # Email changed in DB but student_id kept — registration hits student_id duplicate.
+    # Email changed in DB but student_id kept Ã¢â‚¬â€ registration hits student_id duplicate.
     await conn.execute(
         "UPDATE users SET email = $1 WHERE student_id = $2",
         f"orphan-{sid}@diu.edu.bd",
@@ -313,23 +313,26 @@ def test_registration_util_validation():
     assert validate_registration_identity("252-35-166@diu.edu.bd", "252-35-166") is None
     assert validate_registration_identity("252-35-999@diu.edu.bd", "252-35-166") == MISMATCH_MSG
     assert validate_registration_identity("shafin@diu.edu.bd", "252-35-166") == MISMATCH_MSG
-    assert validate_registration_identity("tahrim35-1137@ds.diu.edu.bd", "123-35-1137") is None
     assert validate_registration_identity("261-35-113@diu.edu.bd", "261-35-113") is None
-    assert validate_registration_identity("tahrim35-1137@ds.diu.edu.bd", "261-35-113") is None
+    assert validate_registration_identity("123-456-78@diu.edu.bd", "123-456-78") is None
+    assert validate_registration_identity("2026-abcde-9999@diu.edu.bd", "2026-abcde-9999") is None
+    assert validate_registration_identity("tahrim35-1137@ds.diu.edu.bd", "tahrim35-1137") is not None
 
 
 def test_student_id_formats():
     from services.registration_util import validate_student_id_format
 
     assert validate_student_id_format("261-35-113") is None
-    assert validate_student_id_format("123-35-1137") is None
-    assert validate_student_id_format("12-35-113") is not None
+    assert validate_student_id_format("123-456-78") is None
+    assert validate_student_id_format("2026-abcde-9999") is None
+    assert validate_student_id_format("123456") is not None
+    assert validate_student_id_format("bad id") is not None
 
 
-def test_is_diu_email_subdomains():
+def test_is_diu_email_root_domain_only():
     from services.google_auth import is_diu_email
 
-    assert is_diu_email("tahrim35-1137@ds.diu.edu.bd") is True
+    assert is_diu_email("tahrim35-1137@ds.diu.edu.bd") is False
     assert is_diu_email("261-35-113@diu.edu.bd") is True
     assert is_diu_email("notdiu@gmail.com") is False
 
@@ -364,7 +367,8 @@ async def test_password_not_stored_plain_in_db(conn, mock_request):
     assert stored.startswith("$2")
 
 
-def test_auth_rate_limit(monkeypatch):
+@pytest.mark.asyncio
+async def test_auth_rate_limit(monkeypatch):
     from unittest.mock import MagicMock
 
     from fastapi import HTTPException
@@ -374,11 +378,11 @@ def test_auth_rate_limit(monkeypatch):
     monkeypatch.setenv("AUTH_RATE_LIMIT_WINDOW", "60")
 
     request = MagicMock()
-    request.client.host = "test-client"
+    request.client.host = f"test-client-{uuid.uuid4().hex}"
     request.headers.get.return_value = None
 
-    enforce_auth_rate_limit(request, "auth:login")
-    enforce_auth_rate_limit(request, "auth:login")
+    await enforce_auth_rate_limit(request, "auth:login")
+    await enforce_auth_rate_limit(request, "auth:login")
     with pytest.raises(HTTPException) as exc:
-        enforce_auth_rate_limit(request, "auth:login")
+        await enforce_auth_rate_limit(request, "auth:login")
     assert exc.value.status_code == 429

@@ -1,12 +1,14 @@
-"""WebSocket route — real-time booking broadcast (PostgreSQL auth)."""
+"""WebSocket route â€” real-time booking broadcast (PostgreSQL auth)."""
 from __future__ import annotations
 
 import logging
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
 
 from services.jwt_util import decode_token
+from services.token_revocation import is_token_revoked
 from services.ws_manager import ws_manager
 
 router = APIRouter(tags=["ws"])
@@ -43,12 +45,23 @@ async def bookings_ws(
 
     pool = websocket.app.state.db_pool
     async with pool.acquire() as conn:
+        jti = payload.get("jti", "")
+        if jti and await is_token_revoked(conn, jti):
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
         row = await conn.fetchrow(
-            "SELECT id, is_active FROM users WHERE id = $1", user_uuid
+            "SELECT id, is_active, suspension_until FROM users WHERE id = $1", user_uuid
         )
     if not row or not row["is_active"]:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
+    suspension_until = row.get("suspension_until")
+    if suspension_until is not None:
+        if suspension_until.tzinfo is None:
+            suspension_until = suspension_until.replace(tzinfo=timezone.utc)
+        if suspension_until > datetime.now(timezone.utc):
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
 
     await ws_manager.connect(websocket)
     try:

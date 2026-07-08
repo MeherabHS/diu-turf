@@ -29,6 +29,14 @@ import { getFriendlyErrorMessage } from "@/src/utils/errors";
 import { clearUserCache } from "@/src/utils/userCache";
 import { storage } from "@/src/utils/storage";
 
+const authLog = (...args: unknown[]) => {
+  if (__DEV__) console.log(...args);
+};
+
+const authWarn = (...args: unknown[]) => {
+  if (__DEV__) console.warn(...args);
+};
+
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -58,10 +66,10 @@ async function persistLogin(
   source: "dev" | "google" | "password",
 ): Promise<void> {
   await storage.secureSet(JWT_STORAGE_KEY, access_token);
-  console.log("[AUTH_STORE] token saved");
-  console.log("[AUTH_STORE] user role", user.role);
+  authLog("[AUTH_STORE] token saved");
+  authLog("[AUTH_STORE] user role", user.role);
   if (source === "dev") {
-    console.log("[DEV_LOGIN] success");
+    authLog("[DEV_LOGIN] success");
   }
   useAuthStore.setState({
     token: access_token,
@@ -87,7 +95,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // success, stale token, network failure, timeout, or SecureStore error.
   // The app can never be stuck on the JS splash because of this function.
   restoreSession: async () => {
-    console.log("[BOOT] restoreSession start");
+    authLog("[BOOT] restoreSession start");
     set({ isLoading: true, error: null });
 
     // SecureStore failures must not block startup (Rule 5).
@@ -95,23 +103,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       token = (await storage.secureGet<string>(JWT_STORAGE_KEY, "")) ?? "";
     } catch (e) {
-      console.warn("[BOOT] SecureStore read failed — continuing unauthenticated", e);
+      authWarn("[BOOT] SecureStore read failed — continuing unauthenticated", e);
       token = "";
     }
 
     if (!token) {
-      console.log("[BOOT] no stored token — routing to login");
+      authLog("[BOOT] no stored token — routing to login");
       set({ token: null, user: null, isAuthenticated: false, isLoading: false });
-      console.log("[BOOT] restoreSession end");
+      authLog("[BOOT] restoreSession end");
       return;
     }
 
     // Validate the stored token via /me, but bound it with a short timeout so
     // an unreachable backend cannot hang startup (Rule 2, 3).
     try {
-      console.log("[BOOT] refreshMe start (validating stored token)");
+      authLog("[BOOT] refreshMe start (validating stored token)");
       const { user } = await authService.me(5000);
-      console.log("[BOOT] refreshMe success — routing authenticated");
+      authLog("[BOOT] refreshMe success — routing authenticated");
       set({ token, user, isAuthenticated: true, isLoading: false });
     } catch (e) {
       // Network/timeout (status 0) → keep token, but show login so the user
@@ -119,9 +127,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Auth error (401) → token is stale, clear it.
       const status = (e as { status?: number })?.status;
       if (status === 0) {
-        console.warn("[BOOT] backend unreachable during restore — routing to login (token kept)");
+        authWarn("[BOOT] backend unreachable during restore - routing to login (token kept)");
+        set({
+          token: null,
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: "The server is waking up or unreachable. Retry in a moment.",
+        });
+        authLog("[BOOT] restoreSession end");
+        return;
       } else {
-        console.warn("[BOOT] stored token invalid — clearing");
+        authWarn("[BOOT] stored token invalid — clearing");
         try {
           await storage.secureRemove(JWT_STORAGE_KEY);
         } catch {
@@ -130,7 +147,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       set({ token: null, user: null, isAuthenticated: false, isLoading: false });
     }
-    console.log("[BOOT] restoreSession end");
+    authLog("[BOOT] restoreSession end");
   },
 
   // ── Email + password login ─────────────────────────────────────────────────
@@ -169,14 +186,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // ── Google Sign-In (UI hidden — kept for future use) ─────────────────────
   loginWithGoogle: async (idToken: string) => {
-    console.log("[GOOGLE_AUTH] loginWithGoogle start");
+    authLog("[GOOGLE_AUTH] loginWithGoogle start");
     set({ isLoading: true, error: null });
     try {
       const { access_token, user } = await authService.googleLogin(idToken);
       await persistLogin(access_token, user, "google");
     } catch (e) {
       const msg = getFriendlyErrorMessage(e, "Google sign-in failed");
-      console.warn("[GOOGLE_AUTH] loginWithGoogle failed:", msg);
+      authWarn("[GOOGLE_AUTH] loginWithGoogle failed:", msg);
       try {
         await storage.secureRemove(JWT_STORAGE_KEY);
       } catch {
@@ -188,14 +205,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // ── Dev login ──────────────────────────────────────────────────────────────
   loginWithDev: async (email: string) => {
-    console.log("[DEV] loginWithDev start");
+    authLog("[DEV] loginWithDev start");
     set({ isLoading: true, error: null });
     try {
       const { access_token, user } = await authService.devLogin(email);
       await persistLogin(access_token, user, "dev");
     } catch (e) {
       const msg = getFriendlyErrorMessage(e, "Unable to connect right now. Please try again.");
-      console.warn("[DEV] loginWithDev failed:", msg);
+      authWarn("[DEV] loginWithDev failed:", msg);
       try {
         await storage.secureRemove(JWT_STORAGE_KEY);
       } catch {

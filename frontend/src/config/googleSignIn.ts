@@ -18,9 +18,9 @@ export function getGoogleWebClientId(): string {
 export function configureGoogleSignIn(): void {
   const webClientId = getGoogleWebClientId();
 
-  console.log("[GOOGLE_AUTH] WEB CLIENT ID", webClientId);
+  if (__DEV__) console.log("[GOOGLE_AUTH] WEB CLIENT ID", webClientId);
 
-  if (webClientId !== EXPECTED_WEB_CLIENT_ID) {
+  if (__DEV__ && webClientId !== EXPECTED_WEB_CLIENT_ID) {
     console.warn("[GOOGLE_AUTH] WEB CLIENT ID mismatch", {
       expected: EXPECTED_WEB_CLIENT_ID,
       actual: webClientId,
@@ -33,7 +33,7 @@ export function configureGoogleSignIn(): void {
   });
 
   configured = true;
-  console.log("[GOOGLE_AUTH] GoogleSignin.configure() applied");
+  if (__DEV__) console.log("[GOOGLE_AUTH] GoogleSignin.configure() applied");
 }
 
 export function isGoogleSignInConfigured(): boolean {

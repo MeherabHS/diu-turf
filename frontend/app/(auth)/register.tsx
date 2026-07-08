@@ -6,16 +6,22 @@ import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   KeyboardAvoidingView,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/src/components/Button";
+import {
+  PRIVACY_POLICY_URL,
+  TERMS_OF_SERVICE_URL,
+} from "@/src/constants";
 import { registerSchema, type RegisterFormValues } from "@/src/schemas/register";
 import { useAuthStore } from "@/src/store/useAuthStore";
 import { colors, radii, spacing, typography } from "@/src/theme";
@@ -97,6 +103,12 @@ export default function RegisterScreen() {
 
   const displayError = submitError || error;
 
+  const openUrl = (url: string) => {
+    Linking.openURL(url).catch(() => {
+      setSubmitError("Unable to open the link right now.");
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]} testID="register-screen">
       <KeyboardAvoidingView
@@ -150,7 +162,7 @@ export default function RegisterScreen() {
                     setError(null);
                   }}
                   onBlur={onBlur}
-                  placeholder="261-35-113@diu.edu.bd or user@ds.diu.edu.bd"
+                  placeholder="Enter your DIU mail"
                   placeholderTextColor={colors.text_tertiary}
                   autoCapitalize="none"
                   keyboardType="email-address"
@@ -327,6 +339,26 @@ export default function RegisterScreen() {
             testID="register-submit-button"
           />
 
+          {PRIVACY_POLICY_URL || TERMS_OF_SERVICE_URL ? (
+            <View style={styles.legalBox} testID="register-legal-links">
+              <Text style={styles.legalText}>
+                By creating an account, you agree to the app policies.
+              </Text>
+              <View style={styles.legalLinks}>
+                {PRIVACY_POLICY_URL ? (
+                  <TouchableOpacity onPress={() => openUrl(PRIVACY_POLICY_URL)}>
+                    <Text style={styles.legalLink}>Privacy Policy</Text>
+                  </TouchableOpacity>
+                ) : null}
+                {TERMS_OF_SERVICE_URL ? (
+                  <TouchableOpacity onPress={() => openUrl(TERMS_OF_SERVICE_URL)}>
+                    <Text style={styles.legalLink}>Terms</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+          ) : null}
+
           <Link href="/(auth)/login" asChild>
             <Text style={styles.link} testID="register-sign-in-link">
               Already have an account? Sign in
@@ -367,6 +399,27 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   errorText: { ...typography.body, color: colors.danger, flex: 1 },
+  legalBox: {
+    alignItems: "center",
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  legalText: {
+    ...typography.caption,
+    color: colors.text_secondary,
+    textAlign: "center",
+  },
+  legalLinks: {
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: spacing.lg,
+  },
+  legalLink: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: "600",
+  },
   link: {
     ...typography.body,
     color: colors.primary,

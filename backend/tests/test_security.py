@@ -1,4 +1,4 @@
-"""Security hardening tests — revocation, suspension, CORS config."""
+"""Security hardening tests â€” revocation, suspension, CORS config."""
 from __future__ import annotations
 
 import os
@@ -17,6 +17,7 @@ os.environ.setdefault("ENVIRONMENT", "development")
 os.environ.setdefault("DEV_AUTH_ENABLED", "false")
 os.environ.setdefault("AUTH_RATE_LIMIT_MAX", "1000")
 os.environ.setdefault("AUTH_RATE_LIMIT_WINDOW", "60")
+os.environ.setdefault("ADMIN_DEFAULT_PASSWORD", "TestAdminPassword1!")
 os.environ.setdefault("ALLOWED_ORIGINS", "*")
 
 _TEST_DB = Path(__file__).parent / f"test_security_{uuid.uuid4().hex[:8]}.db"

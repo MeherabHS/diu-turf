@@ -85,6 +85,7 @@ android-sdk/
 *.env
 credentials.json
 *.key
+*.keystore
 .credentials
 # --- DIU Turf backend secrets ---
 backend/.env
@@ -113,6 +114,7 @@ backend/.pytest_cache/
 frontend/.expo/
 frontend/dist/
 frontend/web-build/
+frontend/.metro-cache/
 frontend/android/app/build/
 frontend/ios/build/
 

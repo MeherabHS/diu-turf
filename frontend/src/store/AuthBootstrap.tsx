@@ -1,5 +1,5 @@
 /**
- * AuthBootstrap — runs session restore on app start.
+ * AuthBootstrap â€” runs session restore on app start.
  *
  * Phase 2 status:
  *   - Emergent deep-link session_id listener removed.
@@ -7,7 +7,7 @@
  *   - Only action: call restoreSession() once on mount, which reads the
  *     persisted JWT and calls /api/auth/me.
  *
- * TODO(phase4): After email/password auth lands, no changes needed here —
+ * TODO(phase4): After email/password auth lands, no changes needed here â€”
  *   restoreSession() will continue to work via the same JWT/storage mechanism.
  */
 import React, { useEffect } from "react";
@@ -23,7 +23,7 @@ export const AuthBootstrap: React.FC<{ children: React.ReactNode }> = ({ childre
   useRegisterPushNotifications(isAuthenticated);
 
   useEffect(() => {
-    console.log("[BOOT] AuthBootstrap mounted");
+    if (__DEV__) console.log("[BOOT] AuthBootstrap mounted");
     restoreSession();
   }, [restoreSession]);
 

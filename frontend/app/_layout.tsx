@@ -1,14 +1,14 @@
 /**
- * Root layout — startup hardened (Phase 4.1).
+ * Root layout â€” startup hardened (Phase 4.1).
  *
  * ROOT CAUSE of the previous splash freeze:
  *   The old code did `if (!loaded && !error) return null;` where `loaded`
  *   came from useIconFonts() which, under Expo Go, fetches ~19 .ttf files
  *   from a remote CDN (jsdelivr). On the Android emulator, if that CDN fetch
  *   stalls (slow/no network, blocked host), useFonts never resolves to
- *   `true` and never errors → the layout returned null forever → the React
- *   tree never mounted → SplashScreen.hideAsync() (gated on loaded||error)
- *   never ran → the native "frontend" splash stayed up permanently.
+ *   `true` and never errors â†’ the layout returned null forever â†’ the React
+ *   tree never mounted â†’ SplashScreen.hideAsync() (gated on loaded||error)
+ *   never ran â†’ the native "frontend" splash stayed up permanently.
  *
  * FIX (Rule 1, 2, 6): startup can NEVER hang on fonts.
  *   - A hard 3s timeout forces the app to render regardless of font state.
@@ -31,7 +31,7 @@ initSentry();
 const STARTUP_FONT_TIMEOUT_MS = 3000;
 
 SplashScreen.preventAutoHideAsync().catch(() => {
-  /* preventAutoHide can reject if called twice — harmless */
+  /* preventAutoHide can reject if called twice â€” harmless */
 });
 
 export default Sentry.wrap(RootLayout);
@@ -40,12 +40,12 @@ function RootLayout() {
   const [loaded, error] = useIconFonts();
   const [fontTimedOut, setFontTimedOut] = useState(false);
 
-  console.log("[BOOT] App launched");
+  if (__DEV__) console.log("[BOOT] App launched");
 
   // Hard timeout: never wait on fonts longer than STARTUP_FONT_TIMEOUT_MS.
   useEffect(() => {
     const id = setTimeout(() => {
-      console.log("[BOOT] font load timed out — rendering anyway");
+      if (__DEV__) console.log("[BOOT] font load timed out â€” rendering anyway");
       setFontTimedOut(true);
     }, STARTUP_FONT_TIMEOUT_MS);
     return () => clearTimeout(id);
@@ -56,14 +56,14 @@ function RootLayout() {
   // Hide the native splash as soon as we are ready to render anything.
   useEffect(() => {
     if (ready) {
-      console.log("[BOOT] hiding splash (loaded=%s, error=%s, timedOut=%s)", loaded, !!error, fontTimedOut);
+      if (__DEV__) console.log("[BOOT] hiding splash (loaded=%s, error=%s, timedOut=%s)", loaded, !!error, fontTimedOut);
       SplashScreen.hideAsync().catch(() => {
-        /* already hidden — harmless */
+        /* already hidden â€” harmless */
       });
     }
   }, [ready, loaded, error, fontTimedOut]);
 
-  // Only the native splash shows during this brief window (≤ 3s).
+  // Only the native splash shows during this brief window (â‰¤ 3s).
   if (!ready) return null;
 
   return (

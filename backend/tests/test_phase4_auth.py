@@ -1,26 +1,26 @@
-"""Phase 4 backend tests — Google OAuth + PostgreSQL + JWT.
+"""Phase 4 backend tests â€” Google OAuth + PostgreSQL + JWT.
 
 Coverage:
   Backend (unit + integration stubs):
-    ✓ valid DIU email accepted by is_diu_email()
-    ✓ non-DIU email rejected by is_diu_email()
-    ✓ invalid/short token raises ValueError in verify_google_id_token()
-    ✓ JWT issued with correct claims (sub, email, role, jti, exp)
-    ✓ JWT decoded successfully
-    ✓ expired JWT raises HTTP 401
-    ✓ tampered JWT raises HTTP 401
-    ✓ jti present and is a valid UUID
-    ✓ issue_token / decode_token round-trip
-    ✓ _pg_row_to_user_dict normalisation (user_id, picture, profile_completed)
-    ✓ _build_user_response from mock PG row
+    âœ“ valid DIU email accepted by is_diu_email()
+    âœ“ non-DIU email rejected by is_diu_email()
+    âœ“ invalid/short token raises ValueError in verify_google_id_token()
+    âœ“ JWT issued with correct claims (sub, email, role, jti, exp)
+    âœ“ JWT decoded successfully
+    âœ“ expired JWT raises HTTP 401
+    âœ“ tampered JWT raises HTTP 401
+    âœ“ jti present and is a valid UUID
+    âœ“ issue_token / decode_token round-trip
+    âœ“ _pg_row_to_user_dict normalisation (user_id, picture, profile_completed)
+    âœ“ _build_user_response from mock PG row
 
-  Integration stubs (require live PostgreSQL — skipped in CI without DB):
-    ✓ POST /api/auth/google with mocked Google → 200 + access_token + user
-    ✓ POST /api/auth/google non-DIU → 403
-    ✓ POST /api/auth/google invalid token → 401
-    ✓ GET  /api/auth/me valid JWT → 200 + user
-    ✓ GET  /api/auth/me missing token → 401
-    ✓ POST /api/auth/logout → 200
+  Integration stubs (require live PostgreSQL â€” skipped in CI without DB):
+    âœ“ POST /api/auth/google with mocked Google â†’ 200 + access_token + user
+    âœ“ POST /api/auth/google non-DIU â†’ 403
+    âœ“ POST /api/auth/google invalid token â†’ 401
+    âœ“ GET  /api/auth/me valid JWT â†’ 200 + user
+    âœ“ GET  /api/auth/me missing token â†’ 401
+    âœ“ POST /api/auth/logout â†’ 200
 
 Run:
     cd backend
@@ -37,23 +37,23 @@ from unittest.mock import AsyncMock, patch
 import jwt
 import pytest
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-os.environ.setdefault("JWT_SECRET", "test-secret-phase4")
+os.environ.setdefault("JWT_SECRET", "test-secret-phase4-32chars-minimum")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 os.environ.setdefault("JWT_EXPIRES_DAYS", "7")
 
 
-# ── is_diu_email ──────────────────────────────────────────────────────────────
+# â”€â”€ is_diu_email â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def test_diu_email_accepted():
     from services.google_auth import is_diu_email
     assert is_diu_email("abc221-15-1234@diu.edu.bd") is True
     assert is_diu_email("student@diu.edu.bd") is True
     assert is_diu_email("ADMIN@DIU.EDU.BD") is True  # case-insensitive
-    assert is_diu_email("tahrim35-1137@ds.diu.edu.bd") is True
-    assert is_diu_email("user@swe.diu.edu.bd") is True
-    assert is_diu_email("user@cse.diu.edu.bd") is True
+    assert is_diu_email("tahrim35-1137@ds.diu.edu.bd") is False
+    assert is_diu_email("user@swe.diu.edu.bd") is False
+    assert is_diu_email("user@cse.diu.edu.bd") is False
 
 
 def test_non_diu_email_rejected():
@@ -65,7 +65,7 @@ def test_non_diu_email_rejected():
     assert is_diu_email("") is False
 
 
-# ── Google token validation (unit — no network) ───────────────────────────────
+# â”€â”€ Google token validation (unit â€” no network) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @pytest.mark.asyncio
 async def test_short_token_raises():
@@ -158,7 +158,7 @@ async def test_google_tokeninfo_valid_returns_claims():
     assert claims["picture"] == "https://example.com/photo.jpg"
 
 
-# ── JWT issue / decode ────────────────────────────────────────────────────────
+# â”€â”€ JWT issue / decode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def test_issue_token_structure():
     from services.jwt_util import decode_token, issue_token
@@ -213,7 +213,7 @@ def test_tampered_token_raises_401():
     assert exc_info.value.status_code == 401
 
 
-# ── _pg_row_to_user_dict normalisation ───────────────────────────────────────
+# â”€â”€ _pg_row_to_user_dict normalisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def test_pg_row_normalisation_complete_profile():
     from services.auth_dep import _pg_row_to_user_dict
@@ -256,7 +256,7 @@ def test_pg_row_normalisation_incomplete_profile():
         "avatar_url": None,
         "google_sub": "goog-456",
         "role": "student",
-        "student_id": None,          # no student_id → incomplete
+        "student_id": None,          # no student_id â†’ incomplete
         "department": None,
         "batch": None,
         "is_active": True,
@@ -300,7 +300,7 @@ def test_pg_row_normalisation_suspended():
     assert result["suspension"]["reason"] == "misbehaviour"
 
 
-# ── Migration 002 parses ──────────────────────────────────────────────────────
+# â”€â”€ Migration 002 parses â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def test_migration_002_loads():
     import importlib.util

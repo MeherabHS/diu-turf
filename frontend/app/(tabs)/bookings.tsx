@@ -1,5 +1,4 @@
-/** My Bookings — Phase 3. Upcoming / Completed / Cancelled tabs + live countdown. */
-import { Ionicons } from "@expo/vector-icons";
+/** My Bookings â€” Phase 3. Upcoming / Completed / Cancelled tabs + live countdown. */
 import { useRouter } from "expo-router";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {

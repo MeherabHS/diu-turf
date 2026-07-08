@@ -17,7 +17,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/src/components/Button";
-import { ADMIN_CONTACT_EMAIL, APP_NAME } from "@/src/constants";
+import {
+  ADMIN_CONTACT_EMAIL,
+  APP_NAME,
+  PRIVACY_POLICY_URL,
+  TERMS_OF_SERVICE_URL,
+} from "@/src/constants";
 import { useAuthStore } from "@/src/store/useAuthStore";
 import { colors, radii, spacing, typography } from "@/src/theme";
 
@@ -30,6 +35,7 @@ export default function LoginScreen() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const error = useAuthStore((s) => s.error);
   const setError = useAuthStore((s) => s.setError);
+  const restoreSession = useAuthStore((s) => s.restoreSession);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,6 +70,12 @@ export default function LoginScreen() {
       "Describe your issue (wrong student ID, login problem, etc.):\n\n",
     );
     Linking.openURL(`mailto:${ADMIN_CONTACT_EMAIL}?subject=${subject}&body=${body}`);
+  };
+
+  const openUrl = (url: string) => {
+    Linking.openURL(url).catch(() => {
+      setError("Unable to open the link right now.");
+    });
   };
 
   return (
@@ -104,7 +116,7 @@ export default function LoginScreen() {
               setEmail(text);
               setError(null);
             }}
-            placeholder="261-35-113@diu.edu.bd or user@ds.diu.edu.bd"
+            placeholder="Enter your DIU mail"
             placeholderTextColor={colors.text_tertiary}
             autoCapitalize="none"
             autoCorrect={false}
@@ -143,6 +155,18 @@ export default function LoginScreen() {
               Create account
             </Text>
           </Link>
+
+          {error?.includes("server is waking up") ? (
+            <TouchableOpacity
+              onPress={restoreSession}
+              disabled={isLoading}
+              style={styles.retryButton}
+              testID="login-retry-session-button"
+            >
+              <Ionicons name="refresh" size={17} color={colors.primary} />
+              <Text style={styles.retryText}>Retry connection</Text>
+            </TouchableOpacity>
+          ) : null}
 
           {DEV_AUTH_ENABLED ? (
             <View style={styles.devSection} testID="dev-login-section">
@@ -190,7 +214,22 @@ export default function LoginScreen() {
                 <Text style={styles.helpLink}>Report an issue · {ADMIN_CONTACT_EMAIL}</Text>
               </TouchableOpacity>
             </View>
-          </View>
+            </View>
+
+          {PRIVACY_POLICY_URL || TERMS_OF_SERVICE_URL ? (
+            <View style={styles.legalLinks} testID="login-legal-links">
+              {PRIVACY_POLICY_URL ? (
+                <TouchableOpacity onPress={() => openUrl(PRIVACY_POLICY_URL)}>
+                  <Text style={styles.legalLink}>Privacy Policy</Text>
+                </TouchableOpacity>
+              ) : null}
+              {TERMS_OF_SERVICE_URL ? (
+                <TouchableOpacity onPress={() => openUrl(TERMS_OF_SERVICE_URL)}>
+                  <Text style={styles.legalLink}>Terms</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -243,6 +282,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     paddingVertical: spacing.sm,
   },
+  retryButton: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  retryText: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: "600",
+  },
   notice: {
     flexDirection: "row", alignItems: "flex-start", gap: spacing.sm,
     marginTop: spacing.md, paddingHorizontal: spacing.xs,
@@ -264,6 +316,19 @@ const styles = StyleSheet.create({
   helpTitle: { ...typography.bodyBold, color: colors.text_primary },
   helpText: { ...typography.caption, color: colors.text_secondary },
   helpLink: { ...typography.caption, color: colors.primary, fontWeight: "600", marginTop: spacing.xs },
+  legalLinks: {
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
+  },
+  legalLink: {
+    ...typography.caption,
+    color: colors.text_secondary,
+    fontWeight: "600",
+  },
   devSection: { gap: spacing.sm, marginTop: spacing.md },
   devDivider: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   devDividerLine: { flex: 1, height: 1, backgroundColor: "#F59E0B44" },

@@ -1,5 +1,6 @@
-/** Per-user AsyncStorage cache — keys scoped by user id to prevent cross-account leaks. */
+﻿/** Per-user AsyncStorage cache â€” keys scoped by user id to prevent cross-account leaks. */
 import { storage } from "@/src/utils/storage";
+import type { StorageItemValue } from "@/src/utils/storage/storage-base";
 
 const PREFIX = "@diu/user-cache";
 
@@ -13,16 +14,16 @@ export async function getUserCache<T>(
   fallback: T,
 ): Promise<T | null> {
   if (!userId) return fallback;
-  return storage.getItem(userCacheKey(userId, suffix), fallback);
+  return storage.getItem(userCacheKey(userId, suffix), fallback as StorageItemValue) as Promise<T | null>;
 }
 
-export async function setUserCache<T extends string | number | boolean | null>(
+export async function setUserCache<T>(
   userId: string,
   suffix: string,
   value: T,
 ): Promise<void> {
   if (!userId) return;
-  await storage.setItem(userCacheKey(userId, suffix), value);
+  await storage.setItem(userCacheKey(userId, suffix), value as StorageItemValue);
 }
 
 export async function clearUserCache(userId: string | null | undefined): Promise<void> {
@@ -35,3 +36,4 @@ export async function clearUserCache(userId: string | null | undefined): Promise
 export const USER_CACHE_SUFFIX = {
   accessRequest: "access_request",
 } as const;
+

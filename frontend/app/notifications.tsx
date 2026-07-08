@@ -1,5 +1,4 @@
-/** Notification history — list with mark-as-read. */
-import { Ionicons } from "@expo/vector-icons";
+/** Notification history Ã¢â‚¬â€ list with mark-as-read. */
 import { Stack } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -47,10 +46,10 @@ export default function NotificationsScreen() {
 
   useLiveScreenRefresh(load);
 
-  const markAll = async () => {
+  const markAll = useCallback(async () => {
     await notificationService.markAllRead();
     await load();
-  };
+  }, [load]);
   const markOne = async (id: string) => {
     await notificationService.markRead(id);
     setItems((it) => it.map((n) => (n.notification_id === id ? { ...n, read: true } : n)));
@@ -65,7 +64,7 @@ export default function NotificationsScreen() {
         <Button label="Mark all as read" variant="secondary" onPress={markAll} testID="notifications-mark-all" />
       </View>
     );
-  }, [unreadCount]);
+  }, [unreadCount, markAll]);
 
   const listEmpty = useMemo(() => {
     if (slowLoading && loading) {

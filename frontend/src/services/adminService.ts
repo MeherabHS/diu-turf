@@ -10,6 +10,9 @@ export interface StudentListItem {
   name: string;
   email: string;
   role?: string;
+  batch: string | null;
+  room_number: string | null;
+  created_at: string | null;
   booking_count: number;
   status: StudentStatus;
   suspended: boolean;

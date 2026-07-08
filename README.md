@@ -687,6 +687,20 @@ frontend/android/app/build/outputs/apk/release/app-armeabi-v7a-release.apk
 
 > Prefer **EAS preview** or **`yarn android:release:arm64`** over emulator release builds — emulator defaults produce x86_64 APKs that won't install on phones.
 
+### Frontend - Play Store AAB
+
+Use the production profile for Google Play. It builds an Android App Bundle and uses the production API URL from `eas.json`.
+
+```powershell
+cd frontend
+npm run play:check
+npx eas build -p android --profile production
+```
+
+Release signing must use EAS Android credentials or local `ANDROID_KEYSTORE_*` env vars. Local `assembleRelease` / `bundleRelease` fails when no upload keystore is configured, so a debug keystore cannot be shipped by accident.
+
+See **[docs/RELEASE.md](docs/RELEASE.md)** for the full go-live checklist.
+
 ---
 
 ## Environment Variables
@@ -727,6 +741,9 @@ frontend/android/app/build/outputs/apk/release/app-armeabi-v7a-release.apk
 | `EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS` | iOS OAuth client |
 | `EXPO_PUBLIC_DEV_AUTH_ENABLED` | Show dev login button (`false` for release) |
 | `EXPO_PUBLIC_ADMIN_CONTACT_EMAIL` | Shown on login "Report an issue" link |
+| `EXPO_PUBLIC_PRIVACY_POLICY_URL` | HTTPS privacy policy link shown on login/register and required by `play:check` |
+| `EXPO_PUBLIC_TERMS_OF_SERVICE_URL` | Optional HTTPS terms link shown on login/register |
+| `EXPO_PUBLIC_ACCOUNT_DELETION_URL` | Optional account deletion instructions URL for Play Console/user support |
 | `EXPO_PUBLIC_SENTRY_DSN` | Sentry mobile DSN (optional — unset in dev) |
 | `EXPO_PUBLIC_ENVIRONMENT` | Sentry environment label (`production`, etc.) |
 | `EXPO_PUBLIC_SENTRY_DEBUG` | Send Sentry events from dev builds (`true` for testing) |
@@ -942,8 +959,26 @@ See **[docs/MONITORING.md](docs/MONITORING.md)** for: creating Sentry projects, 
 - [ ] Render health check on `/api/health`
 - [ ] Automated PostgreSQL backups ([docs/DIGITALOCEAN.md](docs/DIGITALOCEAN.md) if using DO)
 - [ ] `EXPO_PUBLIC_DEV_AUTH_ENABLED=false` in APK build
+- [ ] `EXPO_PUBLIC_API_BASE_URL` is HTTPS production API
+- [ ] `npm run play:check` passes before every release
 - [ ] EAS build with production OAuth client IDs
 - [ ] Google OAuth consent screen published (exit Testing mode)
+
+### Google Play
+
+- [ ] Release signing configured via EAS credentials or local `ANDROID_KEYSTORE_*` env vars
+- [ ] Production AAB built with `npx eas build -p android --profile production`
+- [ ] Privacy policy URL live and set in `EXPO_PUBLIC_PRIVACY_POLICY_URL`
+- [ ] Terms of service / account deletion policy documented
+- [ ] Data safety form completed for email, student ID, phone, password auth, push token, and crash data
+- [ ] Internal testing track passed on a fresh install
+
+### Release process
+
+- [ ] `npx expo prebuild --clean` after app config/native plugin changes
+- [ ] `npm run play:check`
+- [ ] Fresh-install smoke test: register, login, book, cancel, waitlist, push, admin KPI
+- [ ] Rollback plan: previous AAB available and latest PostgreSQL backup verified
 
 ### Monitoring
 
@@ -965,6 +1000,7 @@ All project guides live in [`docs/`](docs/):
 | Guide | Description |
 |-------|-------------|
 | [docs/CI_CD.md](docs/CI_CD.md) | GitHub Actions CI, Render auto-deploy, EAS build profiles, secrets checklist |
+| [docs/RELEASE.md](docs/RELEASE.md) | Play Store release checklist, backend env checks, AAB build, smoke tests |
 | [docs/MONITORING.md](docs/MONITORING.md) | Sentry setup (backend + mobile), env vars, alerts, privacy scrubbing |
 | [docs/DIGITALOCEAN.md](docs/DIGITALOCEAN.md) | Render backend + DigitalOcean Managed PostgreSQL (SSL, firewall, migrations) |
 | [docs/APK_SIZE.md](docs/APK_SIZE.md) | Android APK size optimization — R8, ABI splits, `eas.json` / release scripts |

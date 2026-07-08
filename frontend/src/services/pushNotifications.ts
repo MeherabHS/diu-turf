@@ -1,5 +1,5 @@
 /**
- * Expo push token registration — sends device token to backend after auth.
+ * Expo push token registration â€” sends device token to backend after auth.
  *
  * Best-effort: permission denial or missing projectId never blocks app usage.
  */
@@ -65,7 +65,7 @@ export async function registerPushNotificationsWithBackend(): Promise<void> {
   }
 
   if (!granted) {
-    if (__DEV__) console.log("[PUSH] notification permission denied — skipping token registration");
+    if (__DEV__) console.log("[PUSH] notification permission denied â€” skipping token registration");
     return;
   }
 
@@ -73,7 +73,7 @@ export async function registerPushNotificationsWithBackend(): Promise<void> {
   if (!projectId) {
     if (__DEV__) {
       console.warn(
-        "[PUSH] EAS projectId missing — add extra.eas.projectId to app.json for push tokens",
+        "[PUSH] EAS projectId missing â€” add extra.eas.projectId to app.json for push tokens",
       );
     }
     return;
@@ -84,7 +84,7 @@ export async function registerPushNotificationsWithBackend(): Promise<void> {
     const expoPushToken = tokenResult.data;
     if (!expoPushToken || expoPushToken === _lastRegisteredToken) {
       if (__DEV__ && expoPushToken) {
-        console.log("[PUSH] token unchanged — skip backend sync");
+        if (__DEV__) console.log("[PUSH] token unchanged â€” skip backend sync");
       }
       return;
     }
@@ -95,7 +95,7 @@ export async function registerPushNotificationsWithBackend(): Promise<void> {
     });
     _lastRegisteredToken = expoPushToken;
     if (__DEV__) {
-      console.log("[PUSH] token registered with backend", expoPushToken.slice(0, 28) + "...");
+      if (__DEV__) console.log("[PUSH] token registered with backend", expoPushToken.slice(0, 28) + "...");
     }
   } catch (e) {
     if (__DEV__) {

@@ -9,7 +9,10 @@ export function isDiuEmail(email: string): boolean {
 }
 
 export function isValidStudentId(studentId: string): boolean {
-  return /^\d{3}-\d{2}-\d{3,4}$/.test(studentId.trim());
+  const normalized = studentId.trim().toLowerCase();
+  // Match backend registration_util: hyphen-separated alphanumeric groups
+  // e.g. 252-35-166, 241-353-113, 123-456-78
+  return /^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(normalized);
 }
 
 /** Strict local-part match applies only to @diu.edu.bd addresses (not department subdomains). */

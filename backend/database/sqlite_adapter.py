@@ -1,4 +1,4 @@
-"""SQLite development adapter — asyncpg-compatible API for local dev."""
+"""SQLite development adapter Ã¢â‚¬â€ asyncpg-compatible API for local dev."""
 from __future__ import annotations
 
 import json
@@ -37,7 +37,7 @@ _JSON_COLS = frozenset({"metadata", "event_payload"})
 
 
 class SQLiteRecord(dict):
-    """Dict-like row — compatible with asyncpg.Record bracket access."""
+    """Dict-like row Ã¢â‚¬â€ compatible with asyncpg.Record bracket access."""
 
 
 def _is_write_sql(sql: str) -> bool:
@@ -46,7 +46,7 @@ def _is_write_sql(sql: str) -> bool:
 
 
 def _format_ts(value: datetime) -> str:
-    """Write a canonical ISO UTC string for storage — delegates to serialize.py."""
+    """Write a canonical ISO UTC string for storage Ã¢â‚¬â€ delegates to serialize.py."""
     if value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
     value = value.astimezone(timezone.utc)
@@ -54,7 +54,7 @@ def _format_ts(value: datetime) -> str:
 
 
 def _parse_timestamp(value: Any) -> Any:
-    """Parse any DB timestamp value — delegates to serialize.parse_dt."""
+    """Parse any DB timestamp value Ã¢â‚¬â€ delegates to serialize.parse_dt."""
     return parse_dt(value)
 
 
@@ -324,7 +324,7 @@ class _AcquireCtx:
 
 
 class SQLitePool:
-    """Minimal pool wrapper — one shared connection for local dev."""
+    """Minimal pool wrapper Ã¢â‚¬â€ one shared connection for local dev."""
 
     def __init__(self, path: Path) -> None:
         self.path = path
@@ -342,9 +342,76 @@ class SQLitePool:
             chunk = stmt.strip()
             if chunk and not chunk.upper().startswith("PRAGMA"):
                 await self._raw.execute(chunk)
+        await self._migrate_users_role_check()
         await self._raw.commit()
         self._conn = SQLiteConnection(self._raw)
         log.info("SQLite schema ready at %s", self.path)
+
+    async def _migrate_users_role_check(self) -> None:
+        """Rebuild old local users tables that predate viewer/booker roles."""
+        if self._raw is None:
+            return
+        row = await self._raw.execute_fetchall(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'"
+        )
+        create_sql = row[0][0] if row else ""
+        if "'viewer'" in create_sql and "'booker'" in create_sql:
+            return
+
+        log.info("Migrating SQLite users.role CHECK constraint for viewer/booker roles")
+        await self._raw.execute("PRAGMA foreign_keys = OFF")
+        await self._raw.execute(
+            """CREATE TABLE users_new (
+                id                TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+                name              TEXT NOT NULL,
+                email             TEXT NOT NULL COLLATE NOCASE,
+                password_hash     TEXT,
+                student_id        TEXT,
+                department        TEXT,
+                batch             TEXT,
+                room_number       TEXT,
+                hostel_name       TEXT,
+                phone             TEXT,
+                avatar_url        TEXT,
+                google_sub        TEXT,
+                auth_provider     TEXT NOT NULL DEFAULT 'password',
+                role              TEXT NOT NULL DEFAULT 'viewer'
+                                  CHECK (role IN ('viewer', 'booker', 'student', 'admin', 'super_admin')),
+                is_active         INTEGER NOT NULL DEFAULT 1,
+                suspension_until  TEXT,
+                suspension_reason TEXT,
+                last_login        TEXT,
+                created_at        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr('000000' || strftime('%f', 'now'), -6) || 'Z'),
+                updated_at        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr('000000' || strftime('%f', 'now'), -6) || 'Z'),
+                UNIQUE (email)
+            )"""
+        )
+        await self._raw.execute(
+            """INSERT INTO users_new (
+                id, name, email, password_hash, student_id, department, batch,
+                room_number, hostel_name, phone, avatar_url, google_sub, auth_provider,
+                role, is_active, suspension_until, suspension_reason, last_login,
+                created_at, updated_at
+            )
+            SELECT
+                id, name, email, password_hash, student_id, department, batch,
+                room_number, hostel_name, phone, avatar_url, google_sub,
+                COALESCE(auth_provider, 'password'),
+                role, is_active, suspension_until, suspension_reason, last_login,
+                created_at, updated_at
+            FROM users"""
+        )
+        await self._raw.execute("DROP TABLE users")
+        await self._raw.execute("ALTER TABLE users_new RENAME TO users")
+        await self._raw.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_student_id ON users (student_id) WHERE student_id IS NOT NULL"
+        )
+        await self._raw.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users (google_sub) WHERE google_sub IS NOT NULL"
+        )
+        await self._raw.execute("CREATE INDEX IF NOT EXISTS idx_users_role ON users (role)")
+        await self._raw.execute("CREATE INDEX IF NOT EXISTS idx_users_is_active ON users (is_active)")
+        await self._raw.execute("PRAGMA foreign_keys = ON")
 
     def acquire(self) -> _AcquireCtx:
         if self._conn is None:

@@ -1,4 +1,4 @@
-/** Post-login route selection — shared by index splash and auth store navigation. */
+/** Post-login route selection â€” shared by index splash and auth store navigation. */
 import { router } from "expo-router";
 
 import type { User } from "@/src/types";
@@ -22,6 +22,6 @@ export function getPostLoginRoute(user: User): PostLoginHref {
 
 export function navigateAfterAuth(user: User): void {
   const next = getPostLoginRoute(user);
-  console.log("[ROUTER] next route", next);
+  if (__DEV__) console.log("[ROUTER] next route", next);
   router.replace(next);
 }

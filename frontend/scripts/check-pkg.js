@@ -23,6 +23,38 @@ const BANNED = {
   },
 };
 
+function stripUtf8Bom(buffer) {
+  if (
+    buffer.length >= 3 &&
+    buffer[0] === 0xef &&
+    buffer[1] === 0xbb &&
+    buffer[2] === 0xbf
+  ) {
+    return buffer.subarray(3);
+  }
+  return buffer;
+}
+
+/** UTF-8 BOM breaks JSON.parse and Gradle/Node tooling on Windows. */
+function ensureJsonNoBom(relativePath) {
+  const filePath = path.join(__dirname, "..", relativePath);
+  if (!fs.existsSync(filePath)) return;
+  const raw = fs.readFileSync(filePath);
+  const stripped = stripUtf8Bom(raw);
+  if (stripped.length !== raw.length) {
+    fs.writeFileSync(filePath, stripped);
+    console.warn(
+      `[check-pkg] Removed UTF-8 BOM from ${relativePath} (fixes Android/Expo autolinking on Windows).`,
+    );
+  }
+}
+
+function readJsonFile(relativePath) {
+  ensureJsonNoBom(relativePath);
+  const text = fs.readFileSync(path.join(__dirname, "..", relativePath), "utf8");
+  return JSON.parse(text.startsWith("\uFEFF") ? text.slice(1) : text);
+}
+
 function report(name, recovery) {
   const { reason, alternative } = BANNED[name];
   console.error("");
@@ -47,9 +79,8 @@ if (process.argv[2] === "--args") {
 }
 
 // Default mode: scan package.json on disk.
-const pkg = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"),
-);
+ensureJsonNoBom("app.json");
+const pkg = readJsonFile("package.json");
 const all = { ...pkg.dependencies, ...pkg.devDependencies };
 const hits = Object.keys(all).filter((name) => name in BANNED);
 

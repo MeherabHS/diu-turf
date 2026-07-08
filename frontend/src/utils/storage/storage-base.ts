@@ -1,8 +1,10 @@
-// Abstract base for the storage wrapper — shared types + helpers.
+﻿// Abstract base for the storage wrapper â€” shared types + helpers.
 // Concrete implementations live in index.ts (native) and index.web.ts (web).
 
 export type StorageItemKey = string;
-export type StorageItemValue = string | number | boolean | null;
+export type StorageJsonObject = { [key: string]: StorageItemValue };
+export type StorageJsonArray = StorageItemValue[];
+export type StorageItemValue = string | number | boolean | null | StorageJsonObject | StorageJsonArray;
 
 // Helper for subclasses to enforce that they don't declare methods beyond
 // StorageBase. Use as: type _ = AssertNoExtras<Exclude<keyof Storage, keyof StorageBase>>;
@@ -48,3 +50,4 @@ export abstract class StorageBase {
   ): Promise<boolean>;
   abstract secureRemove(key: string): Promise<boolean>;
 }
+

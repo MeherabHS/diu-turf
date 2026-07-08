@@ -1,9 +1,9 @@
-"""Pydantic models — Phase 4 update.
+"""Pydantic models â€” Phase 4 update.
 
 Changes from Phase 1-3:
-  GoogleAuthRequest   — now carries 'id_token' (Google ID token), not session_token.
-  AuthResponse        — renamed field: token → access_token.
-  User                — added google_sub, last_login; role extended to super_admin.
+  GoogleAuthRequest   â€” now carries 'id_token' (Google ID token), not session_token.
+  AuthResponse        â€” renamed field: token â†’ access_token.
+  User                â€” added google_sub, last_login; role extended to super_admin.
 """
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ BookingStatus = Literal["booked", "completed", "cancelled"]
 ActivityAction = Literal["BOOKED", "CANCELLED", "COMPLETED", "EXPIRED"]
 
 
-# ── Auth models ───────────────────────────────────────────────────────────────
+# â”€â”€ Auth models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class GoogleAuthRequest(BaseModel):
     """Phase 4: accepts a Google ID token from expo-auth-session."""
@@ -44,16 +44,16 @@ class GoogleAuthRequest(BaseModel):
 
 
 class DevLoginRequest(BaseModel):
-    """Development-only login bypass — rejected in production."""
+    """Development-only login bypass â€” rejected in production."""
     email: str = Field(..., min_length=6, description="@diu.edu.bd email for dev login")
 
 
 class RegisterRequest(BaseModel):
-    """POST /api/auth/register — DIU email + password registration."""
+    """POST /api/auth/register â€” DIU email + password registration."""
     email: str = Field(..., min_length=10)
     password: str = Field(..., min_length=8, max_length=128)
     full_name: str = Field(..., min_length=2, max_length=80)
-    student_id: str = Field(..., min_length=10, max_length=12)
+    student_id: str = Field(..., min_length=3, max_length=32)
     department: str = Field(..., min_length=1, max_length=100)
     batch: str = Field(..., min_length=1, max_length=50)
     room_number: Optional[str] = Field(default=None, max_length=20)
@@ -62,7 +62,7 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """POST /api/auth/login — email + password."""
+    """POST /api/auth/login â€” email + password."""
     email: str = Field(..., min_length=10)
     password: str = Field(..., min_length=1, max_length=128)
 
@@ -71,7 +71,7 @@ class User(BaseModel):
     """Normalised user object returned in every auth response.
 
     user_id maps from the PostgreSQL 'id' (UUID as string) or the MongoDB
-    'user_id' field — both routes use this same model.
+    'user_id' field â€” both routes use this same model.
     """
     user_id: str
     email: EmailStr
@@ -101,7 +101,7 @@ class AuthMeResponse(BaseModel):
     user: User
 
 
-# ── Profile ───────────────────────────────────────────────────────────────────
+# â”€â”€ Profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ProfileUpdate(BaseModel):
     name: str = Field(min_length=2, max_length=80)
@@ -113,7 +113,7 @@ class ProfileUpdate(BaseModel):
     phone: Optional[str] = Field(default=None, max_length=20)
 
 
-# ── Bookings ──────────────────────────────────────────────────────────────────
+# â”€â”€ Bookings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class Booking(BaseModel):
     booking_id: str
@@ -207,7 +207,7 @@ class WeeklyUsage(BaseModel):
     cancellations_limit: int
 
 
-# ── Activity / Notifications ──────────────────────────────────────────────────
+# â”€â”€ Activity / Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class ActivityItem(BaseModel):
     activity_id: str

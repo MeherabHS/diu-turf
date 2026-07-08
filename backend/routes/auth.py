@@ -1,9 +1,9 @@
-"""Auth routes — DIU email/password + Google OAuth (paused) + JWT.
+"""Auth routes â€” DIU email/password + Google OAuth (paused) + JWT.
 
 Endpoints:
-  POST /api/auth/register  DIU email + password registration → JWT.
-  POST /api/auth/login     Email + password login → JWT.
-  POST /api/auth/google     Verify Google ID token → upsert PG user → issue JWT.
+  POST /api/auth/register  DIU email + password registration â†’ JWT.
+  POST /api/auth/login     Email + password login â†’ JWT.
+  POST /api/auth/google     Verify Google ID token â†’ upsert PG user â†’ issue JWT.
   POST /api/auth/dev-login  Dev-only bypass (DEV_AUTH_ENABLED=true, non-production).
   GET  /api/auth/me         Return current authenticated user.
   POST /api/auth/logout     Revoke JWT jti + clear client token.
@@ -73,7 +73,7 @@ async def _log_users_indexes_once(conn: asyncpg.Connection) -> None:
         )
         if rows:
             for row in rows:
-                log.info("[INDEX] users.%s → %s", row["indexname"], row["indexdef"])
+                log.info("[INDEX] users.%s â†’ %s", row["indexname"], row["indexdef"])
         else:
             log.warning("[INDEX] no indexes found on public.users")
         _indexes_logged = True
@@ -88,7 +88,7 @@ def _timing(step: str, started: float) -> float:
     return elapsed
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _build_user_response(row: asyncpg.Record) -> User:
     """Convert a PostgreSQL users row to the User Pydantic model."""
@@ -150,7 +150,7 @@ async def _upsert_user(
         row = await conn.fetchrow("SELECT * FROM users WHERE id = $1", existing["id"])
         return row, "auth.login"
 
-    # Create new account — role assigned from admin email list.
+    # Create new account â€” role assigned from admin email list.
     assigned_role = role_for_email(claims["email"])
     student_id = claims["email"].split("@", 1)[0]
     user_id = await conn.fetchval(
@@ -237,7 +237,7 @@ async def _issue_auth_response(
     return AuthResponse(access_token=token, user=_build_user_response(row))
 
 
-# ── POST /api/auth/register ───────────────────────────────────────────────────
+# â”€â”€ POST /api/auth/register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 async def register(
@@ -246,7 +246,7 @@ async def register(
     conn: asyncpg.Connection = Depends(get_conn),
 ) -> AuthResponse:
     """Register a new student with DIU email + password."""
-    enforce_auth_rate_limit(request, "auth:register")
+    await enforce_auth_rate_limit(request, "auth:register", conn)
     email = normalize_email(payload.email)
     student_id = normalize_student_id(payload.student_id)
     full_name = payload.full_name.strip()
@@ -306,7 +306,7 @@ async def register(
             if row is None:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Registration failed — user row missing after insert.",
+                    detail="Registration failed â€” user row missing after insert.",
                 )
             return await _issue_auth_response(
                 conn,
@@ -327,7 +327,7 @@ async def register(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail) from exc
 
 
-# ── POST /api/auth/login ──────────────────────────────────────────────────────
+# â”€â”€ POST /api/auth/login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @router.post("/login", response_model=AuthResponse, status_code=status.HTTP_200_OK)
 async def login(
@@ -336,7 +336,7 @@ async def login(
     conn: asyncpg.Connection = Depends(get_conn),
 ) -> AuthResponse:
     """Authenticate with DIU email + password."""
-    enforce_auth_rate_limit(request, "auth:login")
+    await enforce_auth_rate_limit(request, "auth:login", conn)
     email = normalize_email(payload.email)
     now = datetime.now(timezone.utc)
 
@@ -362,7 +362,7 @@ async def login(
         if row is None:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Login failed — user row missing after update.",
+                detail="Login failed â€” user row missing after update.",
             )
         return await _issue_auth_response(
             conn,
@@ -374,11 +374,12 @@ async def login(
         )
 
 
-# ── POST /api/auth/google ─────────────────────────────────────────────────────
+# â”€â”€ POST /api/auth/google â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @router.post("/google", response_model=AuthResponse, status_code=status.HTTP_200_OK)
 async def google_login(
     payload: GoogleAuthRequest,
+    request: Request,
     conn: asyncpg.Connection = Depends(get_conn),
 ) -> AuthResponse:
     """Exchange a Google ID token for an application JWT.
@@ -386,13 +387,14 @@ async def google_login(
     10-step flow:
       1. Verify Google ID token (signature + expiry + issuer via Google tokeninfo).
       2. Verify token audience matches configured client ID(s).
-      3. Verify email is @diu.edu.bd — backend is authoritative.
+      3. Verify email is @diu.edu.bd â€” backend is authoritative.
       4. Upsert user in PostgreSQL (INSERT on first login, UPDATE thereafter).
       5. Check account is active / not suspended.
       6. Issue application JWT (HS256, 7-day, with jti).
       7. Write audit log (login or first registration).
       8. Return { access_token, user }.
     """
+    await enforce_auth_rate_limit(request, "auth:google", conn)
     log.info("[GOOGLE_AUTH] id_token received len=%d", len(payload.id_token))
 
     # Step 1 & 2: Google verification (raises ValueError on failure).
@@ -411,7 +413,7 @@ async def google_login(
         claims["sub"][:8] + "...",
     )
 
-    # Step 3: Domain restriction — authoritative.
+    # Step 3: Domain restriction â€” authoritative.
     if not is_diu_email(claims["email"]):
         log.warning("[GOOGLE_AUTH] rejected non-DIU email=%s", claims["email"])
         raise HTTPException(
@@ -454,7 +456,7 @@ async def google_login(
     return AuthResponse(access_token=token, user=_build_user_response(row))
 
 
-# ── POST /api/auth/dev-login ──────────────────────────────────────────────────
+# â”€â”€ POST /api/auth/dev-login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _dev_auth_enabled() -> bool:
     """Return True only when both guards pass: flag set AND not production."""
@@ -473,16 +475,19 @@ def _dev_identity_from_email(email: str) -> tuple[str, str]:
 @router.post("/dev-login", response_model=AuthResponse, status_code=status.HTTP_200_OK)
 async def dev_login(
     payload: DevLoginRequest,
+    request: Request,
     conn: asyncpg.Connection = Depends(get_conn),
 ) -> AuthResponse:
     """Development-only login bypass.
 
     Disabled at runtime when ENVIRONMENT=production or DEV_AUTH_ENABLED!=true.
-    Accepts any @diu.edu.bd email — creates the account if it does not exist.
+    Accepts any @diu.edu.bd email â€” creates the account if it does not exist.
     Returns the same { access_token, user } shape as /api/auth/google.
     """
     request_start = time.perf_counter()
     log.info("[TIMING] step=start")
+
+    await enforce_auth_rate_limit(request, "auth:dev-login", conn)
 
     if not _dev_auth_enabled():
         raise HTTPException(
@@ -569,7 +574,7 @@ async def dev_login(
             if row is None:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Dev login failed — user row missing after upsert.",
+                    detail="Dev login failed â€” user row missing after upsert.",
                 )
 
             if not row["is_active"]:
@@ -621,17 +626,17 @@ async def dev_login(
     except Exception:
         total_ms = (time.perf_counter() - request_start) * 1000
         log.exception(
-            "[TIMING] dev-login failed in %.0fms email=%s — see traceback",
+            "[TIMING] dev-login failed in %.0fms email=%s â€” see traceback",
             total_ms,
             email,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Dev login failed — see server logs for traceback.",
+            detail="Dev login failed â€” see server logs for traceback.",
         ) from None
 
 
-# ── GET /api/auth/me ──────────────────────────────────────────────────────────
+# â”€â”€ GET /api/auth/me â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @router.get("/me", response_model=AuthMeResponse)
 async def me(
@@ -639,7 +644,7 @@ async def me(
 ) -> AuthMeResponse:
     """Return the currently authenticated user.
 
-    Uses get_current_user_pg — requires a PostgreSQL account (Phase 4+).
+    Uses get_current_user_pg â€” requires a PostgreSQL account (Phase 4+).
     Legacy MongoDB accounts should re-authenticate via /google.
     """
     return AuthMeResponse(
@@ -664,7 +669,7 @@ async def me(
     )
 
 
-# ── POST /api/auth/logout ─────────────────────────────────────────────────────
+# â”€â”€ POST /api/auth/logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(

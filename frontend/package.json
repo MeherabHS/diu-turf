@@ -9,11 +9,13 @@
     "start:clear": "expo start -c",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
-    "android:release": "expo run:android --variant release -- -PreactNativeArchitectures=arm64-v8a,armeabi-v7a -Pandroid.enableAbiSplits=true",
-    "android:release:arm64": "expo run:android --variant release -- -PreactNativeArchitectures=arm64-v8a",
+    "android:release": "cd android && gradlew.bat assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a -Pandroid.enableAbiSplits=true -Pandroid.allowDebugReleaseSigning=true",
+    "android:release:arm64": "cd android && gradlew.bat assembleRelease -PreactNativeArchitectures=arm64-v8a -Pandroid.allowDebugReleaseSigning=true",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "play:check": "node ./scripts/check-play-release-env.js",
+    "android:bundle:play": "npm run play:check && cd android && gradlew.bat bundleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a"
   },
   "dependencies": {
     "@expo/metro-runtime": "6.1.2",

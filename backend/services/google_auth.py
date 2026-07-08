@@ -1,4 +1,4 @@
-"""Google ID token verification — Phase 4.
+"""Google ID token verification â€” Phase 4.
 
 Uses Google's tokeninfo endpoint for async, library-free verification.
 Google's servers handle RS256 signature verification, expiry, and issuer
@@ -28,11 +28,11 @@ import httpx
 
 log = logging.getLogger(__name__)
 
-# Google tokeninfo endpoint — verifies signature, expiry, and issuer.
+# Google tokeninfo endpoint â€” verifies signature, expiry, and issuer.
 _TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
 _VALID_ISSUERS = frozenset({"accounts.google.com", "https://accounts.google.com"})
 
-# DIU domain restriction — authoritative check happens here, not on the frontend.
+# DIU domain restriction - authoritative check happens here, not on the frontend.
 ALLOWED_DOMAIN = "@diu.edu.bd"
 
 
@@ -59,7 +59,7 @@ async def verify_google_id_token(token: str) -> GoogleClaims:
     """Verify a Google ID token and return safe, verified claims.
 
     Raises ValueError with a safe (non-leaking) message on any failure.
-    Never raises HTTPException — callers do that conversion.
+    Never raises HTTPException â€” callers do that conversion.
 
     Steps performed:
       1. Call Google's tokeninfo endpoint (signature + expiry + issuer verified by Google).
@@ -79,7 +79,7 @@ async def verify_google_id_token(token: str) -> GoogleClaims:
             raise ValueError("Could not reach Google verification service") from exc
 
     if resp.status_code != 200:
-        # Don't leak Google's raw error body — just a safe message.
+        # Don't leak Google's raw error body â€” just a safe message.
         raise ValueError("Invalid or expired Google ID token")
 
     data = resp.json()
@@ -94,12 +94,12 @@ async def verify_google_id_token(token: str) -> GoogleClaims:
         email_verified,
     )
 
-    # ── Issuer verification ───────────────────────────────────────────────────
+    # â”€â”€ Issuer verification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     iss = data.get("iss", "")
     if iss not in _VALID_ISSUERS:
         raise ValueError("Unexpected token issuer")
 
-    # ── Email verification (before audience — clearer errors) ─────────────────
+    # â”€â”€ Email verification (before audience â€” clearer errors) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if not data.get("email_verified"):
         raise ValueError("Google account email is not verified")
 
@@ -107,14 +107,14 @@ async def verify_google_id_token(token: str) -> GoogleClaims:
     if not email:
         raise ValueError("Token is missing the email claim")
 
-    # ── Audience verification ─────────────────────────────────────────────────
+    # â”€â”€ Audience verification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     allowed = _get_allowed_client_ids()
     if allowed:
         if aud not in allowed:
             log.warning("[GOOGLE_AUTH] token aud '%s' not in configured client IDs", aud)
             raise ValueError("Token audience does not match this application")
     else:
-        log.warning("[GOOGLE_AUTH] no GOOGLE_CLIENT_ID_* configured — skipping aud check")
+        log.warning("[GOOGLE_AUTH] no GOOGLE_CLIENT_ID_* configured â€” skipping aud check")
 
     sub = data.get("sub", "")
     if not sub:
@@ -129,9 +129,9 @@ async def verify_google_id_token(token: str) -> GoogleClaims:
 
 
 def is_diu_email(email: str) -> bool:
-    """Return True if the email belongs to DIU (@diu.edu.bd or @*.diu.edu.bd)."""
+    """Return True only for root DIU email addresses (@diu.edu.bd)."""
     email = email.strip().lower()
     if "@" not in email:
         return False
-    domain = email.split("@", 1)[1]
-    return domain == "diu.edu.bd" or domain.endswith(".diu.edu.bd")
+    local, domain = email.rsplit("@", 1)
+    return bool(local) and domain == "diu.edu.bd"

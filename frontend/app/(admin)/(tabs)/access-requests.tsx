@@ -1,5 +1,4 @@
-/** Admin — review booking access requests. */
-import { Ionicons } from "@expo/vector-icons";
+/** Admin â€” review booking access requests. */
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -126,7 +125,7 @@ export default function AdminAccessRequestsScreen() {
             <Card style={styles.card} testID={`access-request-${item.id}`}>
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.meta}>{item.email}</Text>
-              <Text style={styles.meta}>Student ID: {item.student_id ?? "—"}</Text>
+              <Text style={styles.meta}>Student ID: {item.student_id ?? "â€”"}</Text>
               {item.reason ? <Text style={styles.reason}>{item.reason}</Text> : null}
               <Text style={styles.status}>{item.status.toUpperCase()}</Text>
               {item.status === "pending" ? (

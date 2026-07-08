@@ -20,7 +20,6 @@ export default function Index() {
   }
 
   const next = getPostLoginRoute(user);
-  console.log("[ROUTER] next route", next);
+  if (__DEV__) console.log("[ROUTER] next route", next);
   return <Redirect href={next} />;
 }
-

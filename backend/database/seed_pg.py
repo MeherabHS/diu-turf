@@ -1,7 +1,7 @@
-"""Database seed — default turf, slot templates, and admin user.
+"""Database seed â€” default turf, slot templates, and admin user.
 
 Works with PostgreSQL (asyncpg) and SQLite (local dev adapter).
-Idempotent — safe to run on every startup.
+Idempotent â€” safe to run on every startup.
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ SLOT_DEFINITIONS: list[tuple[str, time, time]] = [
     ("C", time(18, 0), time(19, 0)),
 ]
 
-# Permanent dev accounts — ensured on every startup (idempotent).
+# Permanent dev accounts â€” ensured on every startup (idempotent).
 DEV_ADMIN_EMAIL = "261-35-113@diu.edu.bd"
 DEV_ADMIN_STUDENT_ID = "261-35-113"
 DEV_ADMIN_NAME = "Admin User"
@@ -40,8 +40,8 @@ DEV_TEST_STUDENT_BATCH = "47"
 DEV_TEST_STUDENT_ROOM = "402"
 DEV_TEST_STUDENT_HOSTEL = "DIU Boys Hostel"
 
+ENVIRONMENT = os.getenv("ENVIRONMENT", "production").strip().lower()
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", DEV_ADMIN_EMAIL).strip().lower()
-ADMIN_PASSWORD = os.getenv("ADMIN_DEFAULT_PASSWORD", "Admin@DIU2025!")
 ADMIN_NAME = DEV_ADMIN_NAME
 ADMIN_STUDENT_ID = DEV_ADMIN_STUDENT_ID
 
@@ -147,7 +147,7 @@ async def seed(conn: Any) -> None:
         except Exception:
             pass
 
-    # 1. Turf ─────────────────────────────────────────────────────────────────
+    # 1. Turf â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     turf_id = await conn.fetchval(
         "SELECT id FROM turfs WHERE name = $1 AND is_active = TRUE LIMIT 1",
         TURF_NAME,
@@ -177,7 +177,7 @@ async def seed(conn: Any) -> None:
     turf_id = _id_str(turf_row["id"])
     log.info("Verified turf row: id=%s name=%s", turf_id, turf_row["name"])
 
-    # 2. Slot templates ───────────────────────────────────────────────────────
+    # 2. Slot templates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     for slot_key, start, end in SLOT_DEFINITIONS:
         existing = await conn.fetchval(
             """SELECT id FROM slot_templates
@@ -204,7 +204,7 @@ async def seed(conn: Any) -> None:
             )
             await _commit_if_needed(conn)
             log.info(
-                "Created slot  : %s  %s–%s  turf_id=%s  id=%s",
+                "Created slot  : %s  %sâ€“%s  turf_id=%s  id=%s",
                 slot_key,
                 start.strftime("%H:%M"),
                 end.strftime("%H:%M"),
@@ -214,13 +214,18 @@ async def seed(conn: Any) -> None:
         else:
             log.info("Slot exists   : %s  (id=%s)", slot_key, existing)
 
-    # 3. Dev admin user ────────────────────────────────────────────────────────
-    admin_email = DEV_ADMIN_EMAIL
+    # 3. Dev admin user â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    admin_email = ADMIN_EMAIL
     existing_admin = await conn.fetchval(
         "SELECT id FROM users WHERE email = $1",
         admin_email,
     )
-    admin_password_hash = None if existing_admin else _hash(ADMIN_PASSWORD)
+    admin_password = os.getenv("ADMIN_DEFAULT_PASSWORD", "").strip()
+    if not existing_admin and not admin_password:
+        raise RuntimeError(
+            "ADMIN_DEFAULT_PASSWORD must be set before seeding an admin account."
+        )
+    admin_password_hash = None if existing_admin else _hash(admin_password)
     await _ensure_user(
         conn,
         email=admin_email,
@@ -232,7 +237,7 @@ async def seed(conn: Any) -> None:
         batch="47",
     )
 
-    # 4. Dev test student ───────────────────────────────────────────────────────
+    # 4. Dev test student â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await _ensure_user(
         conn,
         email=DEV_TEST_STUDENT_EMAIL,

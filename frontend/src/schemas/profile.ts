@@ -13,7 +13,8 @@ export const profileSchema = z.object({
     .string()
     .trim()
     .refine(isValidStudentId, {
-      message: "Student ID must match xxx-xx-xxx or xxx-xx-xxxx (e.g. 252-35-166).",
+      message:
+        "Student ID must use letters/numbers in groups separated by hyphens (e.g. 252-35-166 or 241-353-113).",
     }),
   department: z
     .string()
