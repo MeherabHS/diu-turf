@@ -268,17 +268,30 @@ def _student_status(row: dict, now: datetime) -> str:
 
 
 async def _student_aggregate_stats(conn: asyncpg.Connection, now: datetime) -> dict:
-    total = await conn.fetchval("SELECT COUNT(*) FROM users")
+    student_roles = ["booker", "viewer", "student"]
+
+    total = await conn.fetchval(
+        """SELECT COUNT(*) FROM users
+           WHERE role = ANY($1::text[])""",
+        student_roles,
+    )
     suspended = await conn.fetchval(
         """SELECT COUNT(*) FROM users
-           WHERE suspension_until IS NOT NULL AND suspension_until > $1""",
+           WHERE role = ANY($2::text[])
+             AND (
+                is_active = FALSE
+                OR (suspension_until IS NOT NULL AND suspension_until > $1)
+             )""",
         now,
+        student_roles,
     )
     active = await conn.fetchval(
         """SELECT COUNT(*) FROM users
-           WHERE is_active = TRUE
+           WHERE role = ANY($2::text[])
+             AND is_active = TRUE
              AND (suspension_until IS NULL OR suspension_until <= $1)""",
         now,
+        student_roles,
     )
     return {"total": int(total or 0), "active": int(active or 0), "suspended": int(suspended or 0)}
 
@@ -392,6 +405,8 @@ async def admin_students(
         conditions.append(f"batch = ${len(params)}")
 
     where = " AND ".join(conditions) if conditions else "TRUE"
+    student_scope = "role IN ('booker', 'viewer', 'student')"
+    where = f"({where}) AND {student_scope}"
     total = await conn.fetchval(f"SELECT COUNT(*) FROM users WHERE {where}", *params)
     offset = (page - 1) * page_size
     params.extend([page_size, offset])

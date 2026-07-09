@@ -5,6 +5,7 @@ Database: PostgreSQL in production · SQLite for local development.
 from __future__ import annotations
 
 import asyncio
+import async_timeout
 import logging
 import os
 import time
@@ -69,7 +70,7 @@ async def lifespan(app: FastAPI):
             )
 
     try:
-        async with asyncio.timeout(STARTUP_DB_TIMEOUT):
+        async with async_timeout.timeout(STARTUP_DB_TIMEOUT):
             logger.info("[STARTUP] seed begin (timeout=%ss)", STARTUP_DB_TIMEOUT)
             async with pool.acquire() as conn:
                 await seed(conn)

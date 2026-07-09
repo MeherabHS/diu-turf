@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import async_timeout
 import logging
 import os
 import time
@@ -27,7 +28,7 @@ async def ping_database(
 
     start = time.perf_counter()
     try:
-        async with asyncio.timeout(timeout_sec):
+        async with async_timeout.timeout(timeout_sec):
             await _ping()
         ms = (time.perf_counter() - start) * 1000
         log.info("[ROOT] db ping ok in %.1fms", ms)
