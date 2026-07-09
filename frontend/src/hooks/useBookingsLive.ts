@@ -10,10 +10,8 @@ import { useAuthStore } from "@/src/store/useAuthStore";
 import { useBookingsRefreshStore } from "@/src/store/useBookingsRefreshStore";
 import { uuidHex } from "@/src/utils/uuid";
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ??
-  process.env.EXPO_PUBLIC_BACKEND_URL ??
-  "https://diu-turf.onrender.com";
+const API_BASE_URL = "https://api.logicaltriangle.co";
+const BASE_URL = API_BASE_URL;
 
 function toWsUrl(base: string, token: string): string {
   const wsBase = base.replace(/^http/i, "ws").replace(/\/+$/, "");
@@ -32,12 +30,12 @@ export function useBookingsRefreshNonce(): number {
   return useBookingsRefreshStore((s) => s.nonce);
 }
 
-/** @deprecated Use useBookingsRefreshNonce — connected is internal only. */
+/** @deprecated Use useBookingsRefreshNonce; connected is internal only. */
 export function useBookingsLive(): { nonce: number } {
   return { nonce: useBookingsRefreshNonce() };
 }
 
-/** Single app-wide WebSocket — silent reconnect, no user-facing status. */
+/** Single app-wide WebSocket; silent reconnect, no user-facing status. */
 export function BookingsLiveSync(): null {
   const token = useAuthStore((s) => s.token);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);

@@ -142,7 +142,7 @@ Sentry reports **application errors**; it does not tell you when Render is down 
 
 | Tool | Role |
 |------|------|
-| **Render health check** | Point at `GET https://diu-turf.onrender.com/api/health` |
+| **Render health check** | Point at `GET https://api.logicaltriangle.co/api/health` |
 | **[UptimeRobot](https://uptimerobot.com)** (free) | External ping every 5 minutes; email on downtime |
 
 Use both: UptimeRobot for “is the server reachable?”, Sentry for “is the app throwing exceptions?”.

@@ -149,7 +149,11 @@ async def seed(conn: Any) -> None:
 
     # 1. Turf â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     turf_id = await conn.fetchval(
-        "SELECT id FROM turfs WHERE name = $1 AND is_active = TRUE LIMIT 1",
+        """SELECT id
+           FROM turfs
+           WHERE name = $1 AND is_active = TRUE
+           ORDER BY created_at ASC, id ASC
+           LIMIT 1""",
         TURF_NAME,
     )
     if not turf_id:

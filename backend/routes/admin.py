@@ -24,7 +24,6 @@ from services.uuid_util import uuid_same
 from services.slot_cache import load_slot_cache
 from services.turf_schedule import (
     MAIN_TURF_NAME,
-    active_slot_count,
     coerce_db_time,
     is_future_slot,
     now_turf,
@@ -81,15 +80,31 @@ async def admin_kpis(
     admin: dict = Depends(require_admin),
     conn: asyncpg.Connection = Depends(get_conn),
 ):
-    turf_id, _, slot_templates = _get_turf_state(request)
+    _get_turf_state(request)
     today = now_turf().date()
     now = datetime.now(timezone.utc)
-    total_slots = active_slot_count(slot_templates)
+
+    total_slots = await conn.fetchval(
+        """SELECT COUNT(*)
+           FROM slot_templates s
+           JOIN turfs t ON t.id = s.turf_id
+           WHERE t.name = $1 AND t.is_active = TRUE AND s.is_active = TRUE""",
+        MAIN_TURF_NAME,
+    )
+    total_slots = int(total_slots or 0)
 
     bookings_today = await conn.fetchval(
-        "SELECT COUNT(*) FROM bookings WHERE booking_date=$1 AND turf_id=$2 AND status='booked'",
-        today, turf_id,
+        """SELECT COUNT(*)
+           FROM bookings b
+           JOIN turfs t ON t.id = b.turf_id
+           WHERE b.booking_date = $1
+             AND b.status = 'booked'
+             AND t.name = $2
+             AND t.is_active = TRUE""",
+        today,
+        MAIN_TURF_NAME,
     )
+    bookings_today = int(bookings_today or 0)
     util_pct = int(round(bookings_today / total_slots * 100)) if total_slots else 0
 
     active_students = await conn.fetchval(
@@ -99,22 +114,69 @@ async def admin_kpis(
         now,
     )
     maint_days = await conn.fetchval(
-        "SELECT COUNT(*) FROM maintenance_days WHERE date >= $1 AND turf_id=$2",
-        today, turf_id,
+        """SELECT COUNT(*)
+           FROM maintenance_days m
+           JOIN turfs t ON t.id = m.turf_id
+           WHERE m.date >= $1 AND t.name = $2 AND t.is_active = TRUE""",
+        today,
+        MAIN_TURF_NAME,
     )
     waitlist_pending = await conn.fetchval(
-        "SELECT COUNT(*) FROM waitlists WHERE status='waiting'",
+        """SELECT COUNT(*)
+           FROM waitlists w
+           JOIN turfs t ON t.id = w.turf_id
+           WHERE w.status = 'waiting' AND t.name = $1 AND t.is_active = TRUE""",
+        MAIN_TURF_NAME,
     )
     upcoming = await conn.fetchval(
-        "SELECT COUNT(*) FROM bookings WHERE status='booked' AND booking_date >= $1 AND turf_id=$2",
-        today, turf_id,
+        """SELECT COUNT(*)
+           FROM bookings b
+           JOIN turfs t ON t.id = b.turf_id
+           WHERE b.status = 'booked'
+             AND b.booking_date >= $1
+             AND t.name = $2
+             AND t.is_active = TRUE""",
+        today,
+        MAIN_TURF_NAME,
     )
-    att_total   = await conn.fetchval("SELECT COUNT(*) FROM attendance")
-    att_present = await conn.fetchval("SELECT COUNT(*) FROM attendance WHERE status='present'")
-    att_rate    = int(round(att_present / att_total * 100)) if att_total else 0
+    upcoming = int(upcoming or 0)
 
-    total_bk   = await conn.fetchval("SELECT COUNT(*) FROM bookings")
-    cancelled  = await conn.fetchval("SELECT COUNT(*) FROM bookings WHERE status='cancelled'")
+    att_total = await conn.fetchval(
+        """SELECT COUNT(*)
+           FROM attendance a
+           JOIN bookings b ON b.id = a.booking_id
+           JOIN turfs t ON t.id = b.turf_id
+           WHERE t.name = $1 AND t.is_active = TRUE""",
+        MAIN_TURF_NAME,
+    )
+    att_present = await conn.fetchval(
+        """SELECT COUNT(*)
+           FROM attendance a
+           JOIN bookings b ON b.id = a.booking_id
+           JOIN turfs t ON t.id = b.turf_id
+           WHERE a.status = 'present' AND t.name = $1 AND t.is_active = TRUE""",
+        MAIN_TURF_NAME,
+    )
+    att_total = int(att_total or 0)
+    att_present = int(att_present or 0)
+    att_rate = int(round(att_present / att_total * 100)) if att_total else 0
+
+    total_bk = await conn.fetchval(
+        """SELECT COUNT(*)
+           FROM bookings b
+           JOIN turfs t ON t.id = b.turf_id
+           WHERE t.name = $1 AND t.is_active = TRUE""",
+        MAIN_TURF_NAME,
+    )
+    cancelled = await conn.fetchval(
+        """SELECT COUNT(*)
+           FROM bookings b
+           JOIN turfs t ON t.id = b.turf_id
+           WHERE b.status = 'cancelled' AND t.name = $1 AND t.is_active = TRUE""",
+        MAIN_TURF_NAME,
+    )
+    total_bk = int(total_bk or 0)
+    cancelled = int(cancelled or 0)
     cancel_rate = int(round(cancelled / total_bk * 100)) if total_bk else 0
 
     return {
@@ -132,12 +194,20 @@ async def admin_kpis(
 
 @router.get("/admin/bookings")
 async def admin_list_bookings(
+    request: Request,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     admin: dict = Depends(require_admin),
     conn: asyncpg.Connection = Depends(get_conn),
 ):
-    total = await conn.fetchval("SELECT COUNT(*) FROM bookings")
+    _get_turf_state(request)
+    total = await conn.fetchval(
+        """SELECT COUNT(*)
+           FROM bookings b
+           JOIN turfs t ON t.id = b.turf_id
+           WHERE t.name = $1 AND t.is_active = TRUE""",
+        MAIN_TURF_NAME,
+    )
     offset = (page - 1) * page_size
     rows = await conn.fetch(
         """SELECT b.id AS booking_id, b.booking_date, b.status, b.created_at,
@@ -146,8 +216,11 @@ async def admin_list_bookings(
            FROM bookings b
            JOIN users u ON u.id = b.user_id
            JOIN slot_templates s ON s.id = b.slot_template_id
+           JOIN turfs t ON t.id = b.turf_id
+           WHERE t.name = $1 AND t.is_active = TRUE
            ORDER BY b.booking_date DESC, s.start_time DESC
-           LIMIT $1 OFFSET $2""",
+           LIMIT $2 OFFSET $3""",
+        MAIN_TURF_NAME,
         page_size,
         offset,
     )

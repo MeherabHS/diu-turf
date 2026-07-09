@@ -9,11 +9,13 @@
 
 A **mobile-first turf reservation system** for **Daffodil International University (DIU)** hostel students. Students book daily turf slots fairly; admins operate a full control room with audit trails, slot management, and analytics-ready data.
 
+This repo is also structured as a **data science / data engineering portfolio project**: it captures real operational events, models booking demand, keeps auditable transaction history, and is ready for MSc-level analysis of resource allocation, fairness, and student facility usage.
+
 | | |
 |---|---|
 | **App name** | **DIU Turf** |
 | **Package ID** | `com.diu.turf` |
-| **Live API** | [`https://diu-turf.onrender.com`](https://diu-turf.onrender.com) |
+| **Live API** | [`https://api.logicaltriangle.co`](https://api.logicaltriangle.co) |
 | **Mobile** | React Native · Expo SDK 54 · TypeScript |
 | **Backend** | FastAPI · asyncpg · PostgreSQL (SQLite dev fallback) |
 | **Auth** | Google OAuth · DIU email/password · HS256 JWT with revocation |
@@ -27,26 +29,27 @@ A **mobile-first turf reservation system** for **Daffodil International Universi
 1. [Problem & Solution](#problem--solution)
 2. [Screenshots & Demo](#screenshots--demo)
 3. [Features](#features)
-4. [Tech Stack](#tech-stack)
-5. [Architecture](#architecture)
-6. [Repository Structure](#repository-structure)
-7. [Database](#database)
-8. [Business Rules](#business-rules)
-9. [Authentication & Authorization](#authentication--authorization)
-10. [Security](#security)
-11. [Codebase Health](#codebase-health)
-12. [Getting Started](#getting-started)
-13. [Deployment](#deployment)
-14. [Environment Variables](#environment-variables)
-15. [API Reference](#api-reference)
-16. [WebSocket Events](#websocket-events)
-17. [Database Migrations](#database-migrations)
-18. [Testing](#testing)
-19. [Monitoring](#monitoring)
-20. [Production Checklist](#production-checklist)
-21. [Documentation](#documentation)
-22. [Roadmap](#roadmap)
-23. [License](#license)
+4. [Data Science & Engineering Portfolio](#data-science--engineering-portfolio)
+5. [Tech Stack](#tech-stack)
+6. [Architecture](#architecture)
+7. [Repository Structure](#repository-structure)
+8. [Database](#database)
+9. [Business Rules](#business-rules)
+10. [Authentication & Authorization](#authentication--authorization)
+11. [Security](#security)
+12. [Codebase Health](#codebase-health)
+13. [Getting Started](#getting-started)
+14. [Deployment](#deployment)
+15. [Environment Variables](#environment-variables)
+16. [API Reference](#api-reference)
+17. [WebSocket Events](#websocket-events)
+18. [Database Migrations](#database-migrations)
+19. [Testing](#testing)
+20. [Monitoring](#monitoring)
+21. [Production Checklist](#production-checklist)
+22. [Documentation](#documentation)
+23. [Roadmap](#roadmap)
+24. [License](#license)
 
 ---
 
@@ -72,9 +75,9 @@ Slot templates live in PostgreSQL and are loaded into an in-memory cache at star
 
 | Endpoint | URL |
 |----------|-----|
-| Health check | `GET https://diu-turf.onrender.com/api/health` |
-| API docs | `https://diu-turf.onrender.com/docs` |
-| Service status | `GET https://diu-turf.onrender.com/api/` |
+| Health check | `GET https://api.logicaltriangle.co/api/health` |
+| API docs | `https://api.logicaltriangle.co/docs` |
+| Service status | `GET https://api.logicaltriangle.co/api/` |
 
 > Add screenshots of Home, Book, My Bookings, and Admin Dashboard to `docs/screenshots/` for portfolio presentation.
 
@@ -117,6 +120,7 @@ Slot templates live in PostgreSQL and are loaded into an in-memory cache at star
 
 ### Platform capabilities
 
+- **Analytics-ready event capture** through normalized bookings, waitlists, attendance, notifications, audit logs, and analytics events
 - **ACID booking transactions** — advisory locks + partial unique indexes
 - **Waitlist auto-promotion** on cancellation with push notification
 - **WebSocket sync** — screens refetch on booking/cancel/waitlist events
@@ -127,6 +131,40 @@ Slot templates live in PostgreSQL and are loaded into an in-memory cache at star
 - **PostgreSQL-backed rate limiting** — shared across Render instances (`rate_limit_buckets`)
 - **Production fail-fast validation** — weak secrets, SQLite, wildcard CORS blocked at startup
 - **56 backend tests** — auth, security, bookings, admin, push, Sentry (see [Testing](#testing))
+
+---
+
+## Data Science & Engineering Portfolio
+
+This project is built around a real transactional domain, so it demonstrates more than CRUD screens. The backend produces structured operational data that can support reporting, forecasting, and MSc-level research questions.
+
+### Data engineering evidence
+
+| Area | What this project demonstrates |
+|------|--------------------------------|
+| **Relational modelling** | Normalized PostgreSQL schema for users, bookings, waitlists, attendance, notifications, audit logs, and analytics events |
+| **Transactional integrity** | Advisory locks, partial unique indexes, and ACID booking/cancel/waitlist promotion flows prevent double booking |
+| **Migrations** | Alembic revision chain 001-009 with PostgreSQL-specific constraints, indexes, and extension setup |
+| **Operational data quality** | Server-side validation for DIU identity, role access, booking limits, maintenance days, and suspension rules |
+| **Event history** | Append-style activity/audit records make user actions traceable for analytics and governance |
+| **Production operations** | PostgreSQL deployment, SSL-aware connection config, CI, monitoring hooks, health checks, and release validation |
+
+### Data science use cases
+
+| Question | Dataset signal |
+|----------|----------------|
+| Which time slots have the highest unmet demand? | Bookings, waitlists, slot templates, cancellation records |
+| Are booking opportunities distributed fairly across students? | User-level booking frequency, weekly caps, waitlist position, cancellation history |
+| Can demand be forecast by weekday or semester period? | Booking dates, slot occupancy, activity logs, maintenance days |
+| What predicts cancellation or no-show risk? | Attendance, cancellation timing, booking history, user profile fields |
+| How should facility capacity be planned? | Occupancy rate, waitlist depth, slot popularity, admin maintenance windows |
+
+### MSc / portfolio narrative
+
+- **Problem domain:** fair allocation of a scarce university facility under high demand.
+- **Research angle:** demand forecasting, fairness analysis, queue behaviour, and operational optimization.
+- **Engineering angle:** production API, normalized relational schema, migrations, CI, monitoring, security controls, and mobile data capture.
+- **Suggested analysis extension:** add `notebooks/turf_booking_analytics.ipynb` with occupancy trends, waitlist conversion, cancellation patterns, and a simple demand forecast.
 
 ---
 
@@ -379,7 +417,7 @@ All primary keys are UUID. Timestamps are `TIMESTAMPTZ` (UTC). Email uses Postgr
 | `notifications` | Per-user notification inbox |
 | `activity_logs` | Activity feed events |
 | `audit_logs` | Immutable admin action log |
-| `analytics_events` | Append-only telemetry |
+| `analytics_events` | Append-only telemetry for product analytics and MSc research datasets |
 | `token_revocations` | Revoked JWT `jti` values — checked on every auth request and WebSocket connect |
 | `user_push_tokens` | Expo push tokens per user/device (upsert on register) |
 | `rate_limit_buckets` | PostgreSQL-backed auth rate limit counters (migration 009) |
@@ -552,7 +590,7 @@ App launch → AuthBootstrap → read JWT from SecureStore
 | **Error handling** | HTTPException with consistent status codes; transaction rollback on booking failures |
 | **Logging** | Structured INFO logs; `[PERF]` timing middleware in development |
 | **DB abstraction** | asyncpg pool + SQLite adapter; SSL-aware for DO Postgres; health ping on startup |
-| **Documentation** | OpenAPI auto-generated at `/docs` |
+| **Documentation** | OpenAPI auto-generated at `/docs`; README frames system design, release process, and analytics portfolio value |
 
 ### Frontend
 
@@ -628,7 +666,7 @@ npx expo run:android
 | Android emulator | `http://10.0.2.2:8001` |
 | iOS simulator | `http://localhost:8001` |
 | Physical device (LAN) | `http://<your-LAN-IP>:8001` |
-| Production / shared APK | `https://diu-turf.onrender.com` |
+| Production / shared APK | `https://api.logicaltriangle.co` |
 
 ---
 
@@ -846,7 +884,7 @@ Base path: `/api` · Auth: Bearer JWT unless noted · Interactive docs: `/docs`
 ## WebSocket Events
 
 ```
-wss://diu-turf.onrender.com/api/ws/bookings?token=<jwt>
+wss://api.logicaltriangle.co/api/ws/bookings?token=<jwt>
 ```
 
 On connect the server sends `{ "type": "hello", "user_id": "<uuid>" }`.
@@ -1020,6 +1058,7 @@ All project guides live in [`docs/`](docs/):
 | **WebSocket auth** | Optional | Move JWT from query string to header/protocol |
 | **Booking hardening** | Optional | Idempotency keys for double-tap; user-level advisory locks |
 | **Operations** | Optional | Nightly job: expire stale waitlists, purge old revocations, auto-complete past bookings |
+| **Analytics notebook** | Planned | Occupancy trends, waitlist demand, cancellation/no-show analysis, and demand forecasting for MSc portfolio |
 | **Frontend tests** | Planned | Component and integration tests with Jest/RTL |
 | **iOS** | Planned | OAuth client + TestFlight build |
 | **Scale (>100 users)** | Deferred | Redis WebSocket pub/sub, PgBouncer |
@@ -1032,4 +1071,4 @@ Internal DIU hostel project. Contact the project maintainers for usage and deplo
 
 ---
 
-*Last updated: 24 June 2026 · DIU Turf · `com.diu.turf` · Expo SDK 54 · Alembic revision 009 · 56 backend tests · Deployed at [diu-turf.onrender.com](https://diu-turf.onrender.com)*
+*Last updated: 9 July 2026 · DIU Turf · `com.diu.turf` · Expo SDK 54 · Alembic revision 009 · 56 backend tests · Deployed at [api.logicaltriangle.co](https://api.logicaltriangle.co)*

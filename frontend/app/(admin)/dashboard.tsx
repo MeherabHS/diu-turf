@@ -3,7 +3,7 @@
  */
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Modal,
   RefreshControl,
@@ -21,6 +21,7 @@ import { ErrorState } from "@/src/components/ErrorState";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { SkeletonCard } from "@/src/components/Skeleton";
 import { Toast, type ToastMessage } from "@/src/components/Toast";
+import { useLiveScreenRefresh } from "@/src/hooks/useLiveScreenRefresh";
 import { api } from "@/src/services/api";
 import { useAuthStore } from "@/src/store/useAuthStore";
 import { colors, radii, spacing, typography } from "@/src/theme";
@@ -85,7 +86,7 @@ export default function AdminDashboard() {
       setRefreshing(false);
     }
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useLiveScreenRefresh(load);
 
   const scheduleMaintenance = async () => {
     setSubmitting(true);

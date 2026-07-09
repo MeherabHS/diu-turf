@@ -1,4 +1,4 @@
-"""Security hardening tests â€” revocation, suspension, CORS config."""
+"""Security hardening tests: revocation, suspension, CORS config."""
 from __future__ import annotations
 
 import os
@@ -161,9 +161,9 @@ def test_cors_production_requires_explicit_origins(monkeypatch):
     from services.cors_config import parse_allowed_origins
 
     monkeypatch.setenv("ENVIRONMENT", "production")
-    monkeypatch.setenv("ALLOWED_ORIGINS", "https://diu-turf.onrender.com")
+    monkeypatch.setenv("ALLOWED_ORIGINS", "https://api.logicaltriangle.co")
     origins, credentials = parse_allowed_origins()
-    assert origins == ["https://diu-turf.onrender.com"]
+    assert origins == ["https://api.logicaltriangle.co"]
     assert credentials is True
 
 

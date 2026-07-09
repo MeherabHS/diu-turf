@@ -1,40 +1,14 @@
-/** Thin fetch wrapper that injects the JWT and base URL.
- *
- * Phase 4.1 hardening:
- *   - Every request has an AbortController timeout (default 8s) so a dead
- *     backend can NEVER hang a screen indefinitely (Rule 2).
- *   - Network/timeout failures throw a typed ApiError(0, ...) the caller can
- *     handle gracefully (e.g. fall back to the login screen — Rule 3).
- *   - BASE_URL diagnostics warn when localhost is used on a native target
- *     (Android emulator must use 10.0.2.2, not localhost).
- */
-import { Platform } from "react-native";
-
+/** Thin fetch wrapper that injects the JWT and hardcoded production API base URL. */
 import { JWT_STORAGE_KEY } from "@/src/constants";
 import { storage } from "@/src/utils/storage";
 
-// EXPO_PUBLIC_API_BASE_URL is canonical (Phase 4+); old name kept as fallback.
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ||
-  process.env.EXPO_PUBLIC_BACKEND_URL ||
-  "https://diu-turf.onrender.com";
+// Hardcoded for production-domain test builds; do not allow .env to override this APK.
+const API_BASE_URL = "https://api.logicaltriangle.co";
+const BASE_URL = API_BASE_URL;
 
 // Default per-request timeout. Startup calls override this with a shorter one.
 const DEFAULT_TIMEOUT_MS = 8000;
 
-// Diagnostic: localhost on a native device/emulator will silently fail.
-if (
-  Platform.OS !== "web" &&
-  /localhost|127\.0\.0\.1/.test(BASE_URL)
-) {
-  console.warn(
-    "[API] EXPO_PUBLIC_API_BASE_URL points at localhost on a native target. " +
-    "Android emulator must use http://10.0.2.2:8001. Current: " + BASE_URL,
-  );
-}
-if (!BASE_URL) {
-  console.warn("[API] EXPO_PUBLIC_API_BASE_URL is empty — API calls will fail. Check your .env.");
-}
 
 export class ApiError extends Error {
   status: number;
@@ -82,11 +56,11 @@ async function request<T>(
     });
   } catch (e) {
     clearTimeout(timeoutId);
-    // AbortError (timeout) or network failure → typed error, status 0.
+    // AbortError (timeout) or network failure -> typed error, status 0.
     const aborted = e instanceof Error && e.name === "AbortError";
     const message = aborted
       ? `Request timed out after ${timeoutMs}ms`
-      : "Network error — could not reach the server";
+      : "Network error - could not reach the server";
     console.warn("[API] %s %s failed: %s", method, path, message);
     throw new ApiError(0, null, message);
   } finally {

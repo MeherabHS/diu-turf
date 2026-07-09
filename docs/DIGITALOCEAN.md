@@ -1,6 +1,6 @@
 # DigitalOcean Database Guide — DIU Turf
 
-This guide explains how to run **DIU Turf** with a **Render backend** and a **DigitalOcean PostgreSQL** database. The mobile APK and frontend stay pointed at `https://diu-turf.onrender.com` — no app rebuild required.
+This guide explains how to run **DIU Turf** with a **Render backend** and a **DigitalOcean PostgreSQL** database. The mobile APK and frontend stay pointed at `https://api.logicaltriangle.co` — no app rebuild required.
 
 ---
 
@@ -29,7 +29,7 @@ This guide explains how to run **DIU Turf** with a **Render backend** and a **Di
 ```
 ┌─────────────────────┐         HTTPS/WSS          ┌──────────────────────┐
 │  DIU Turf APK       │ ─────────────────────────► │  Render Web Service  │
-│  (Expo / Android)   │   diu-turf.onrender.com    │  FastAPI + asyncpg   │
+│  (Expo / Android)   │   api.logicaltriangle.co    │  FastAPI + asyncpg   │
 └─────────────────────┘                            └──────────┬───────────┘
                                                                │
                                                                │ PostgreSQL
@@ -43,7 +43,7 @@ This guide explains how to run **DIU Turf** with a **Render backend** and a **Di
 
 | Component | Host | Notes |
 |-----------|------|-------|
-| Mobile app | User devices | API base URL unchanged (`https://diu-turf.onrender.com`) |
+| Mobile app | User devices | API base URL unchanged (`https://api.logicaltriangle.co`) |
 | Backend API | **Render** | Existing start command, health checks, env vars |
 | Database | **DigitalOcean** | Managed PostgreSQL with SSL |
 | Local dev | Your machine | SQLite fallback still works — no DO account needed |
@@ -73,7 +73,7 @@ Target budget: **~$12/month**.
 ## Prerequisites
 
 - DigitalOcean account
-- Existing Render service: `diu-turf.onrender.com`
+- Existing Render service: `api.logicaltriangle.co`
 - `psql`, `pg_dump`, and `pg_restore` installed locally (PostgreSQL client tools)
 - Git repo with latest backend changes (SSL-aware `connection.py`)
 
@@ -257,14 +257,14 @@ After Render finishes deploying:
 **1. Liveness (no DB check):**
 
 ```bash
-curl https://diu-turf.onrender.com/api/health
+curl https://api.logicaltriangle.co/api/health
 # Expected: {"status":"ok"}
 ```
 
 **2. Database connectivity:**
 
 ```bash
-curl https://diu-turf.onrender.com/api/
+curl https://api.logicaltriangle.co/api/
 # Expected: {"service":"DIU Hostel Turf Booking","db":"postgresql","status":"ok"}
 ```
 
@@ -352,12 +352,12 @@ If the DO migration fails or causes production issues:
 
 | Item | Reason |
 |------|--------|
-| **APK / mobile app** | API URL stays `https://diu-turf.onrender.com` |
+| **APK / mobile app** | API URL stays `https://api.logicaltriangle.co` |
 | **`frontend/.env`** | No backend URL change needed |
 | **Render service URL** | Students already use this endpoint |
 | **Local SQLite workflow** | `DATABASE_URL=sqlite:///./dev_turf.db` still works for dev |
 | **Google OAuth client IDs** | Unrelated to database host |
-| **WebSocket URL** | Still `wss://diu-turf.onrender.com/api/ws/bookings` |
+| **WebSocket URL** | Still `wss://api.logicaltriangle.co/api/ws/bookings` |
 
 ---
 

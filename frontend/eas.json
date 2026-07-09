@@ -1,4 +1,4 @@
-﻿{
+{
     "cli":  {
                 "version":  "\u003e= 13.2.0",
                 "appVersionSource":  "remote"
@@ -11,7 +11,7 @@
                                                   "gradleCommand":  ":app:assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a -Pandroid.enableAbiSplits=true"
                                               },
                                   "env":  {
-                                              "EXPO_PUBLIC_API_BASE_URL":  "https://diu-turf.onrender.com",
+                                              "EXPO_PUBLIC_API_BASE_URL":  "https://api.logicaltriangle.co",
                                               "EXPO_PUBLIC_DEV_AUTH_ENABLED":  "false"
                                           }
                               },
@@ -21,7 +21,7 @@
                                                      "gradleCommand":  ":app:bundleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a"
                                                  },
                                      "env":  {
-                                                 "EXPO_PUBLIC_API_BASE_URL":  "https://diu-turf.onrender.com",
+                                                 "EXPO_PUBLIC_API_BASE_URL":  "https://api.logicaltriangle.co",
                                                  "EXPO_PUBLIC_DEV_AUTH_ENABLED":  "false"
                                              }
                                  }

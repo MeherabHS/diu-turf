@@ -56,7 +56,7 @@ cd backend && alembic upgrade head && uvicorn server:app --host 0.0.0.0 --port $
 | `ENVIRONMENT` | `production` |
 | `JWT_SECRET` | Strong random string (≥32 chars) |
 | `DEV_AUTH_ENABLED` | `false` |
-| `ALLOWED_ORIGINS` | `https://diu-turf.onrender.com` (comma-separated if multiple) |
+| `ALLOWED_ORIGINS` | `https://api.logicaltriangle.co` (comma-separated if multiple) |
 | `SENTRY_DSN` | Optional — Sentry backend DSN |
 | Google OAuth client IDs | As configured |
 

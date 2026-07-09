@@ -13,7 +13,11 @@ async def load_slot_cache(app: Any, pool: Any) -> None:
     """Refresh app.state turf + active slot template maps from the database."""
     async with pool.acquire() as conn:
         turf_row = await conn.fetchrow(
-            "SELECT id FROM turfs WHERE name = $1 AND is_active = TRUE LIMIT 1",
+            """SELECT id
+               FROM turfs
+               WHERE name = $1 AND is_active = TRUE
+               ORDER BY created_at ASC, id ASC
+               LIMIT 1""",
             MAIN_TURF_NAME,
         )
         if turf_row:
